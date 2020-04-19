@@ -5,6 +5,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
+	"github.com/aws/aws-sdk-go/service/dynamodb/expression"
 )
 
 type DynamoDBRepository struct {
@@ -77,4 +78,76 @@ func (r *DynamoDBRepository) GetByName(ctx context.Context, tenantId string, buc
 	}
 
 	return bucket, nil
+}
+
+func (r *DynamoDBRepository) CreateOrUpdate(ctx context.Context, bucket *Bucket) error {
+	item, err := dynamodbattribute.MarshalMap(bucket)
+	if err != nil {
+		return err
+	}
+	input := &dynamodb.PutItemInput{
+		TableName: aws.String(r.tableName),
+		Item:      item,
+	}
+	_, err = r.session.PutItemWithContext(ctx, input)
+	return err
+}
+
+func (r *DynamoDBRepository) Delete(ctx context.Context, tenantId string, bucketId string) error {
+	input := &dynamodb.DeleteItemInput{
+		TableName: aws.String(r.tableName),
+		Key: map[string]*dynamodb.AttributeValue{
+			"tenantId": {
+				S: aws.String(tenantId),
+			},
+			"bucketId": {
+				S: aws.String(bucketId),
+			},
+		},
+	}
+	_, err := r.session.DeleteItemWithContext(ctx, input)
+	return err
+}
+
+func (r *DynamoDBRepository) Query(ctx context.Context, queryBuckets QueryBuckets) ([]*Bucket, error) {
+
+	buckets := make([]*Bucket, 0)
+	key := expression.Key("tenantId").Equal(expression.Value(queryBuckets.TenantId))
+
+	filter := expression.ConditionBuilder{}
+	if len(queryBuckets.BucketIds) > 0 {
+		var bucketIdsConditions = make([]expression.OperandBuilder, len(queryBuckets.BucketIds))
+		for i, bucketId := range queryBuckets.BucketIds {
+			bucketIdsConditions[i] = expression.Value(bucketId)
+		}
+		bucketIdsFilter := expression.Name("bucketId").In(bucketIdsConditions[0], bucketIdsConditions[1:]...)
+		filter.And(bucketIdsFilter)
+	}
+	if queryBuckets.BucketName != "" {
+		bucketNameFilter := expression.Name("name").Contains(queryBuckets.BucketName)
+		filter.And(bucketNameFilter)
+	}
+
+	expr, err := expression.NewBuilder().WithKeyCondition(key).WithFilter(filter).Build()
+	if err != nil {
+		return nil, err
+	}
+
+	input := &dynamodb.QueryInput{
+		KeyConditionExpression: expr.KeyCondition(),
+		FilterExpression:       expr.Filter(),
+		Limit:                  aws.Int64(queryBuckets.NbOfReturnedElements),
+		ScanIndexForward:       aws.Bool(false),
+	}
+
+	result, err := r.session.QueryWithContext(ctx, input)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := dynamodbattribute.UnmarshalListOfMaps(result.Items, buckets); err != nil {
+		return nil, err
+	}
+
+	return buckets, nil
 }
