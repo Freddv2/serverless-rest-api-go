@@ -8,15 +8,22 @@ import (
 	"github.com/aws/aws-sdk-go/service/dynamodb/expression"
 )
 
+const (
+	bucketTableName = "BUCKET"
+)
+
 type DynamoDBRepository struct {
-	session   *dynamodb.DynamoDB
-	tableName string
+	session *dynamodb.DynamoDB
+}
+
+func NewDynamoDBRepository(dynamoDBClient *dynamodb.DynamoDB) *DynamoDBRepository {
+	return &DynamoDBRepository{dynamoDBClient}
 }
 
 func (r *DynamoDBRepository) Get(ctx context.Context, tenantId string, bucketId string) (*Bucket, error) {
 	bucket := &Bucket{}
 	input := &dynamodb.GetItemInput{
-		TableName: aws.String(r.tableName),
+		TableName: aws.String(bucketTableName),
 		Key: map[string]*dynamodb.AttributeValue{
 			"tenantId": {
 				S: &tenantId,
@@ -43,7 +50,7 @@ func (r *DynamoDBRepository) Get(ctx context.Context, tenantId string, bucketId 
 func (r *DynamoDBRepository) GetByName(ctx context.Context, tenantId string, bucketName string) (*Bucket, error) {
 	bucket := &Bucket{}
 	input := &dynamodb.QueryInput{
-		TableName: aws.String(r.tableName),
+		TableName: aws.String(bucketTableName),
 		KeyConditions: map[string]*dynamodb.Condition{
 			"tenantId": {
 				ComparisonOperator: aws.String("EQ"),
@@ -80,13 +87,13 @@ func (r *DynamoDBRepository) GetByName(ctx context.Context, tenantId string, buc
 	return bucket, nil
 }
 
-func (r *DynamoDBRepository) CreateOrUpdate(ctx context.Context, bucket *Bucket) error {
+func (r *DynamoDBRepository) CreateOrUpdate(ctx context.Context, bucket Bucket) error {
 	item, err := dynamodbattribute.MarshalMap(bucket)
 	if err != nil {
 		return err
 	}
 	input := &dynamodb.PutItemInput{
-		TableName: aws.String(r.tableName),
+		TableName: aws.String(bucketTableName),
 		Item:      item,
 	}
 	_, err = r.session.PutItemWithContext(ctx, input)
@@ -95,7 +102,7 @@ func (r *DynamoDBRepository) CreateOrUpdate(ctx context.Context, bucket *Bucket)
 
 func (r *DynamoDBRepository) Delete(ctx context.Context, tenantId string, bucketId string) error {
 	input := &dynamodb.DeleteItemInput{
-		TableName: aws.String(r.tableName),
+		TableName: aws.String(bucketTableName),
 		Key: map[string]*dynamodb.AttributeValue{
 			"tenantId": {
 				S: aws.String(tenantId),
@@ -109,9 +116,9 @@ func (r *DynamoDBRepository) Delete(ctx context.Context, tenantId string, bucket
 	return err
 }
 
-func (r *DynamoDBRepository) Query(ctx context.Context, queryBuckets QueryBuckets) ([]*Bucket, error) {
+func (r *DynamoDBRepository) Query(ctx context.Context, queryBuckets QueryBuckets) ([]Bucket, error) {
 
-	buckets := make([]*Bucket, 0)
+	buckets := make([]Bucket, 0)
 	key := expression.Key("tenantId").Equal(expression.Value(queryBuckets.TenantId))
 
 	filter := expression.ConditionBuilder{}
