@@ -23,3 +23,11 @@ type QueryBuckets struct {
 	NextPageCursor       string   `json:"nextPageCursor"`
 	BucketIds            []string `json:"bucketIds"`
 }
+
+type NotFoundError struct {
+	Name string
+}
+
+func (error *NotFoundError) Error() string {
+	return error.Name
+}

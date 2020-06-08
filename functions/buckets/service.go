@@ -1,6 +1,8 @@
 package buckets
 
-import "context"
+import (
+	"context"
+)
 
 type repository interface {
 	Get(ctx context.Context, tenantId string, bucketId string) (*Bucket, error)
@@ -15,7 +17,14 @@ type Service struct {
 }
 
 func (s *Service) findById(ctx context.Context, tenantId string, bucketId string) (*Bucket, error) {
-	return s.Repository.Get(ctx, bucketId, tenantId)
+	bucket, err := s.Repository.Get(ctx, bucketId, tenantId)
+	if err != nil {
+		return nil, err
+	} else if bucket == nil {
+		return nil, &NotFoundError{Name: "Bucket does not exists"}
+	} else {
+		return bucket, err
+	}
 }
 
 func (s *Service) create(ctx context.Context, tenantId string, bucketExists Bucket) error {
