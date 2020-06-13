@@ -16,25 +16,41 @@ type Service struct {
 	Repository repository
 }
 
-func (s *Service) findById(ctx context.Context, tenantId string, bucketId string) (*Bucket, error) {
+func (s *Service) FindById(ctx context.Context, tenantId string, bucketId string) (*Bucket, error) {
 	bucket, err := s.Repository.Get(ctx, bucketId, tenantId)
 	if err != nil {
 		return nil, err
 	} else if bucket == nil {
-		return nil, &NotFoundError{Name: "Bucket does not exists"}
+		return nil, &NotFoundError{}
 	} else {
 		return bucket, err
 	}
 }
 
-func (s *Service) create(ctx context.Context, tenantId string, bucketExists Bucket) error {
-	bucketAlreadyExists, err := s.bucketAlreadyExists(ctx, tenantId, bucketExists.Name)
+func (s *Service) Create(ctx context.Context, tenantId string, bucket Bucket) error {
+	bucketAlreadyExists, err := s.bucketAlreadyExists(ctx, tenantId, bucket.Name)
 	if err != nil {
 		return err
 	}
 	if bucketAlreadyExists {
-		return err()
+		return &AlreadyExistsError{}
 	}
+	return nil
+}
+
+func (s *Service) Update(ctx context.Context, tenantId string, bucket Bucket) error {
+	bucketAlreadyExists, err := s.bucketAlreadyExists(ctx, tenantId, bucket.Name)
+	if err != nil {
+		return err
+	} else if !bucketAlreadyExists {
+		return &NotFoundError{}
+	} else {
+		return nil
+	}
+}
+
+func (s *Service) Delete(ctx context.Context, tenantId string, bucketId string) error {
+	return s.Repository.Delete(ctx, tenantId, bucketId)
 }
 
 func (s *Service) bucketAlreadyExists(ctx context.Context, tenantId string, name string) (bool, error) {

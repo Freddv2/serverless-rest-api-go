@@ -24,10 +24,14 @@ type QueryBuckets struct {
 	BucketIds            []string `json:"bucketIds"`
 }
 
-type NotFoundError struct {
-	Name string
-}
+type NotFoundError struct{}
 
 func (error *NotFoundError) Error() string {
-	return error.Name
+	return "Not Found"
+}
+
+type AlreadyExistsError struct{}
+
+func (error *AlreadyExistsError) Error() string {
+	return "Already Exists"
 }
