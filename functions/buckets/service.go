@@ -2,58 +2,66 @@ package buckets
 
 import (
 	"context"
+	"github.com/segmentio/ksuid"
+	"time"
 )
 
-type repository interface {
-	Get(ctx context.Context, tenantId string, bucketId string) (*Bucket, error)
-	GetByName(ctx context.Context, tenantId string, bucketName string) (*Bucket, error)
-	CreateOrUpdate(ctx context.Context, bucket Bucket) error
-	Delete(ctx context.Context, tenantId string, bucketId string) error
-	Query(ctx context.Context, queryBuckets QueryBuckets) ([]Bucket, error)
+type service struct {
+	repository Repository
 }
 
-type Service struct {
-	Repository repository
+func NewService(repository Repository) *service {
+	return &service{repository}
 }
 
-func (s *Service) FindById(ctx context.Context, tenantId string, bucketId string) (*Bucket, error) {
-	bucket, err := s.Repository.Get(ctx, bucketId, tenantId)
+func (s *service) FindById(ctx context.Context, tenantId string, bucketId string) (*Bucket, error) {
+	bucket, err := s.repository.FindById(ctx, bucketId, tenantId)
 	if err != nil {
 		return nil, err
 	} else if bucket == nil {
-		return nil, &NotFoundError{}
+		return nil, ErrNotFound
 	} else {
 		return bucket, err
 	}
 }
 
-func (s *Service) Create(ctx context.Context, tenantId string, bucket Bucket) error {
+// Create a bucket and return the generated ID
+func (s *service) Create(ctx context.Context, tenantId string, bucket Bucket) (string, error) {
 	bucketAlreadyExists, err := s.bucketAlreadyExists(ctx, tenantId, bucket.Name)
 	if err != nil {
-		return err
+		return "", err
+	} else if bucketAlreadyExists {
+		return "", ErrAlreadyExists
+	} else {
+		id := ksuid.New().String()
+		bucket.Id = id
+		bucket.CreationDate = time.Now()
+		bucket.LastModifiedDate = time.Now()
+		return id, s.repository.CreateOrUpdate(ctx, bucket)
 	}
-	if bucketAlreadyExists {
-		return &AlreadyExistsError{}
-	}
-	return nil
 }
 
-func (s *Service) Update(ctx context.Context, tenantId string, bucket Bucket) error {
+func (s *service) Update(ctx context.Context, tenantId string, bucket Bucket) error {
 	bucketAlreadyExists, err := s.bucketAlreadyExists(ctx, tenantId, bucket.Name)
 	if err != nil {
 		return err
 	} else if !bucketAlreadyExists {
-		return &NotFoundError{}
+		return ErrNotFound
 	} else {
-		return nil
+		bucket.LastModifiedDate = time.Now()
+		return s.repository.CreateOrUpdate(ctx, bucket)
 	}
 }
 
-func (s *Service) Delete(ctx context.Context, tenantId string, bucketId string) error {
-	return s.Repository.Delete(ctx, tenantId, bucketId)
+func (s *service) Delete(ctx context.Context, tenantId string, bucketId string) error {
+	return s.repository.Delete(ctx, tenantId, bucketId)
 }
 
-func (s *Service) bucketAlreadyExists(ctx context.Context, tenantId string, name string) (bool, error) {
-	bucket, err := s.Repository.GetByName(ctx, tenantId, name)
+func (s *service) Search(ctx context.Context, searchContext SearchContext) ([]Bucket, error) {
+	return s.repository.Search(ctx, searchContext)
+}
+
+func (s *service) bucketAlreadyExists(ctx context.Context, tenantId string, name string) (bool, error) {
+	bucket, err := s.repository.FindByName(ctx, tenantId, name)
 	return bucket != nil, err
 }

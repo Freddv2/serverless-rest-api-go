@@ -9,21 +9,21 @@ import (
 )
 
 const (
-	bucketTableName = "BUCKET"
+	tableName = "BUCKET"
 )
 
-type DynamoDBRepository struct {
+type dynamoDBRepository struct {
 	session *dynamodb.DynamoDB
 }
 
-func NewDynamoDBRepository(dynamoDBClient *dynamodb.DynamoDB) *DynamoDBRepository {
-	return &DynamoDBRepository{dynamoDBClient}
+func NewDynamoDBRepository(dynamoDBClient *dynamodb.DynamoDB) *dynamoDBRepository {
+	return &dynamoDBRepository{dynamoDBClient}
 }
 
-func (r *DynamoDBRepository) Get(ctx context.Context, tenantId string, bucketId string) (*Bucket, error) {
+func (r *dynamoDBRepository) FindById(ctx context.Context, tenantId string, bucketId string) (*Bucket, error) {
 	bucket := &Bucket{}
 	input := &dynamodb.GetItemInput{
-		TableName: aws.String(bucketTableName),
+		TableName: aws.String(tableName),
 		Key: map[string]*dynamodb.AttributeValue{
 			"tenantId": {
 				S: &tenantId,
@@ -47,10 +47,10 @@ func (r *DynamoDBRepository) Get(ctx context.Context, tenantId string, bucketId 
 	return bucket, nil
 }
 
-func (r *DynamoDBRepository) GetByName(ctx context.Context, tenantId string, bucketName string) (*Bucket, error) {
+func (r *dynamoDBRepository) FindByName(ctx context.Context, tenantId string, bucketName string) (*Bucket, error) {
 	bucket := &Bucket{}
 	input := &dynamodb.QueryInput{
-		TableName: aws.String(bucketTableName),
+		TableName: aws.String(tableName),
 		KeyConditions: map[string]*dynamodb.Condition{
 			"tenantId": {
 				ComparisonOperator: aws.String("EQ"),
@@ -87,22 +87,22 @@ func (r *DynamoDBRepository) GetByName(ctx context.Context, tenantId string, buc
 	return bucket, nil
 }
 
-func (r *DynamoDBRepository) CreateOrUpdate(ctx context.Context, bucket Bucket) error {
+func (r *dynamoDBRepository) CreateOrUpdate(ctx context.Context, bucket Bucket) error {
 	item, err := dynamodbattribute.MarshalMap(bucket)
 	if err != nil {
 		return err
 	}
 	input := &dynamodb.PutItemInput{
-		TableName: aws.String(bucketTableName),
+		TableName: aws.String(tableName),
 		Item:      item,
 	}
 	_, err = r.session.PutItemWithContext(ctx, input)
 	return err
 }
 
-func (r *DynamoDBRepository) Delete(ctx context.Context, tenantId string, bucketId string) error {
+func (r *dynamoDBRepository) Delete(ctx context.Context, tenantId string, bucketId string) error {
 	input := &dynamodb.DeleteItemInput{
-		TableName: aws.String(bucketTableName),
+		TableName: aws.String(tableName),
 		Key: map[string]*dynamodb.AttributeValue{
 			"tenantId": {
 				S: aws.String(tenantId),
@@ -116,22 +116,22 @@ func (r *DynamoDBRepository) Delete(ctx context.Context, tenantId string, bucket
 	return err
 }
 
-func (r *DynamoDBRepository) Query(ctx context.Context, queryBuckets QueryBuckets) ([]Bucket, error) {
+func (r *dynamoDBRepository) Search(ctx context.Context, searchCtx SearchContext) ([]Bucket, error) {
 
 	buckets := make([]Bucket, 0)
-	key := expression.Key("tenantId").Equal(expression.Value(queryBuckets.TenantId))
+	key := expression.Key("tenantId").Equal(expression.Value(searchCtx.TenantId))
 
 	filter := expression.ConditionBuilder{}
-	if len(queryBuckets.BucketIds) > 0 {
-		var bucketIdsConditions = make([]expression.OperandBuilder, len(queryBuckets.BucketIds))
-		for i, bucketId := range queryBuckets.BucketIds {
+	if len(searchCtx.Ids) > 0 {
+		var bucketIdsConditions = make([]expression.OperandBuilder, len(searchCtx.Ids))
+		for i, bucketId := range searchCtx.Ids {
 			bucketIdsConditions[i] = expression.Value(bucketId)
 		}
 		bucketIdsFilter := expression.Name("bucketId").In(bucketIdsConditions[0], bucketIdsConditions[1:]...)
 		filter.And(bucketIdsFilter)
 	}
-	if queryBuckets.BucketName != "" {
-		bucketNameFilter := expression.Name("name").Contains(queryBuckets.BucketName)
+	if searchCtx.Name != "" {
+		bucketNameFilter := expression.Name("name").Contains(searchCtx.Name)
 		filter.And(bucketNameFilter)
 	}
 
@@ -143,7 +143,7 @@ func (r *DynamoDBRepository) Query(ctx context.Context, queryBuckets QueryBucket
 	input := &dynamodb.QueryInput{
 		KeyConditionExpression: expr.KeyCondition(),
 		FilterExpression:       expr.Filter(),
-		Limit:                  aws.Int64(queryBuckets.NbOfReturnedElements),
+		Limit:                  aws.Int64(int64(searchCtx.NbOfReturnedElements)),
 		ScanIndexForward:       aws.Bool(false),
 	}
 

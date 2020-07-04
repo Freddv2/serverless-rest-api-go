@@ -1,10 +1,12 @@
 package buckets
 
-import "time"
+import (
+	"time"
+)
 
 type Bucket struct {
 	TenantId         string    `json:"tenantId"`
-	BucketId         string    `json:"bucketId"`
+	Id               string    `json:"id"`
 	Name             string    `json:"name"`
 	Description      string    `json:"description"`
 	Asset            []Asset   `json:"asset"`
@@ -16,22 +18,10 @@ type Asset struct {
 	Symbol string `json:"symbol"`
 }
 
-type QueryBuckets struct {
+type SearchContext struct {
 	TenantId             string   `json:"tenantId"`
-	BucketName           string   `json:"bucketName"`
-	NbOfReturnedElements int64    `json:"nbOfReturnedElements"`
+	Name                 string   `json:"name"`
+	NbOfReturnedElements int      `json:"nbOfReturnedElements"`
 	NextPageCursor       string   `json:"nextPageCursor"`
-	BucketIds            []string `json:"bucketIds"`
-}
-
-type NotFoundError struct{}
-
-func (error *NotFoundError) Error() string {
-	return "Not Found"
-}
-
-type AlreadyExistsError struct{}
-
-func (error *AlreadyExistsError) Error() string {
-	return "Already Exists"
+	Ids                  []string `json:"ids"`
 }
