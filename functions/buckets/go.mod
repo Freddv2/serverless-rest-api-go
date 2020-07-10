@@ -11,5 +11,6 @@ require (
 	github.com/golang/mock v1.4.3
 	github.com/google/gofuzz v1.1.0 // indirect
 	github.com/segmentio/ksuid v1.0.3
+	github.com/stretchr/testify v1.5.1
 	gopkg.in/go-playground/assert.v1 v1.2.1 // indirect
 )

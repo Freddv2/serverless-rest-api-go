@@ -15,7 +15,7 @@ func NewService(repository Repository) *service {
 }
 
 func (s *service) FindById(ctx context.Context, tenantId string, bucketId string) (*Bucket, error) {
-	bucket, err := s.repository.FindById(ctx, bucketId, tenantId)
+	bucket, err := s.repository.FindById(ctx, tenantId, bucketId)
 	if err != nil {
 		return nil, err
 	} else if bucket == nil {

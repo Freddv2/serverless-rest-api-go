@@ -5,7 +5,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-//go:generate mockgen -destination=mocks/mock_repository.go -package=mocks . Repository
+//go:generate mockgen -destination=mock_repository.go -package=buckets -self_package buckets . Repository
 type Repository interface {
 	FindById(ctx context.Context, tenantId string, bucketId string) (*Bucket, error)
 	FindByName(ctx context.Context, tenantId string, bucketName string) (*Bucket, error)
