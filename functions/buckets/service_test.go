@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	bucket1 = &Bucket{
+	bucket1 = Bucket{
 		TenantId:         "dv2",
 		Id:               "1",
 		Name:             "An ETF Stocks bucket",
@@ -18,7 +18,7 @@ var (
 		CreationDate:     time.Now(),
 		LastModifiedDate: time.Now(),
 	}
-	bucket2 = &Bucket{
+	bucket2 = Bucket{
 		TenantId:         "dv2",
 		Id:               "2",
 		Name:             "An ETF Bonds bucket",
@@ -27,18 +27,59 @@ var (
 		CreationDate:     time.Now(),
 		LastModifiedDate: time.Now(),
 	}
+	buckets = []Bucket{bucket1, bucket2}
 )
 
-func TestCanFindBucketById(t *testing.T) {
+func initMock(t *testing.T) (s *service, r *MockRepository) {
 
 	ctrl := gomock.NewController(t)
-	mockRepo := NewMockRepository(ctrl)
-	mockRepo.EXPECT().FindById(context.Background(), bucket1.TenantId, bucket1.Id).Return(bucket1, nil)
+	r = NewMockRepository(ctrl)
 
-	s := NewService(mockRepo)
+	s = NewService(r)
 
-	bucket, err := s.FindById(context.Background(), bucket1.TenantId, bucket1.Id)
+	return s, r
+}
+
+func TestCanFindBucketById(t *testing.T) {
+	service, mockRepo := initMock(t)
+
+	mockRepo.EXPECT().FindById(context.Background(), bucket1.TenantId, bucket1.Id).Return(&bucket1, nil)
+	b, err := service.FindById(context.Background(), bucket1.TenantId, bucket1.Id)
 
 	assert.NoError(t, err)
-	assert.Equal(t, bucket1, bucket)
+	assert.Equal(t, bucket1, *b)
+}
+
+func TestCanFindAllBucketByTenant(t *testing.T) {
+	service, mockRepo := initMock(t)
+
+	searchContext := SearchContext{
+		TenantId:             bucket1.TenantId,
+		Name:                 "",
+		NbOfReturnedElements: -1,
+		NextPageCursor:       "",
+		Ids:                  make([]string, 0),
+	}
+	mockRepo.EXPECT().Search(context.Background(), searchContext).Return(buckets, nil)
+	b, err := service.Search(context.Background(), searchContext)
+
+	assert.NoError(t, err)
+	assert.ElementsMatch(t, b, buckets)
+}
+
+func TestCanFindBucketsByName(t *testing.T) {
+	service, mockRepo := initMock(t)
+
+	searchContext := SearchContext{
+		TenantId:             bucket1.TenantId,
+		Name:                 "Stocks",
+		NbOfReturnedElements: -1,
+		NextPageCursor:       "",
+		Ids:                  make([]string, 0),
+	}
+	mockRepo.EXPECT().Search(context.Background(), searchContext).Return([]Bucket{bucket1}, nil)
+	b, err := service.Search(context.Background(), searchContext)
+
+	assert.NoError(t, err)
+	assert.Contains(t, b, bucket1)
 }

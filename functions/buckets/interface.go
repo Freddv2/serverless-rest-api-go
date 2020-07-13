@@ -14,6 +14,7 @@ type Repository interface {
 	Delete(ctx context.Context, tenantId string, bucketId string) error
 }
 
+//go:generate mockgen -destination=mock_service.go -package=buckets -self_package buckets . Service
 type Service interface {
 	FindById(ctx context.Context, tenantId string, bucketId string) (*Bucket, error)
 	Search(ctx context.Context, searchContext SearchContext) ([]Bucket, error)
