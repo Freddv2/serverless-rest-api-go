@@ -15,7 +15,7 @@ func initTestService(t *testing.T) (s *service, r *MockRepository) {
 	return s, r
 }
 
-func TestServiceCanFindById(t *testing.T) {
+func TestService_FindById(t *testing.T) {
 	service, mockRepo := initTestService(t)
 	mockRepo.EXPECT().FindById(context.Background(), testBucket1.TenantId, testBucket1.Id).
 		Return(&testBucket1, nil)
@@ -26,7 +26,7 @@ func TestServiceCanFindById(t *testing.T) {
 	assert.Equal(t, testBucket1, *b)
 }
 
-func TestServiceCanSearch(t *testing.T) {
+func TestService_Search(t *testing.T) {
 	service, mockRepo := initTestService(t)
 	searchContext := SearchContext{
 		TenantId:             testTenant,
@@ -44,7 +44,7 @@ func TestServiceCanSearch(t *testing.T) {
 	assert.ElementsMatch(t, b, testBuckets)
 }
 
-func TestCreateWhenDoesntExist(t *testing.T) {
+func TestService_CreateWhenDoesntExist(t *testing.T) {
 	service, mockRepo := initTestService(t)
 	mockRepo.EXPECT().FindByName(context.Background(), testTenant, testBucket1.Name).
 		Return(nil, nil)
@@ -56,7 +56,7 @@ func TestCreateWhenDoesntExist(t *testing.T) {
 	assert.NotNil(t, id)
 }
 
-func TestErrWhenCreateAndDoesntExist(t *testing.T) {
+func TestService_CreateErrWhenAlreadyExist(t *testing.T) {
 	service, mockRepo := initTestService(t)
 	mockRepo.EXPECT().FindByName(context.Background(), testTenant, testBucket1.Name).
 		Return(&testBucket1, nil)
@@ -66,7 +66,7 @@ func TestErrWhenCreateAndDoesntExist(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestUpdateWhenExists(t *testing.T) {
+func TestService_UpdateWhenExist(t *testing.T) {
 	service, mockRepo := initTestService(t)
 	mockRepo.EXPECT().FindByName(context.Background(), testTenant, testBucket1.Name).
 		Return(&testBucket1, nil)
@@ -77,7 +77,7 @@ func TestUpdateWhenExists(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestErrWhenUpdateAndDoesntExist(t *testing.T) {
+func TestService_UpdateErrWhenDoesntExist(t *testing.T) {
 	service, mockRepo := initTestService(t)
 	mockRepo.EXPECT().FindByName(context.Background(), testTenant, testBucket1.Name).
 		Return(nil, nil)
@@ -85,4 +85,13 @@ func TestErrWhenUpdateAndDoesntExist(t *testing.T) {
 	err := service.Update(context.Background(), testTenant, testBucket1)
 
 	assert.Error(t, err)
+}
+
+func TestService_Delete(t *testing.T) {
+	service, mockRepo := initTestService(t)
+	mockRepo.EXPECT().Delete(context.Background(), testTenant, testBucket1.Id).Return(nil)
+
+	err := service.Delete(context.Background(), testTenant, testBucket1.Id)
+
+	assert.NoError(t, err)
 }

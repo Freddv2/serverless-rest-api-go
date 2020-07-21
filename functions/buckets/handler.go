@@ -30,12 +30,18 @@ func (h *handler) FindById(ctx *gin.Context) {
 }
 
 func (h *handler) Search(ctx *gin.Context) {
-	nbOfReturnedElements, _ := strconv.Atoi(ctx.Param("nbOfReturnedElement"))
-	ids := strings.Split(ctx.Param("ids"), ",")
+	var nbOfReturnedElements int
+	if nb := ctx.Query("nbOfReturnedElement"); nb != "" {
+		nbOfReturnedElements, _ = strconv.Atoi(nb)
+	}
+	var ids = make([]string, 0)
+	if i := ctx.Query("ids"); i != "" {
+		ids = strings.Split(ctx.Query("ids"), ",")
+	}
 	searchContext := SearchContext{
 		TenantId:             ctx.Param("tenantId"),
-		Name:                 ctx.Param("name"),
-		NextPageCursor:       ctx.Param("nextPageCursor"),
+		Name:                 ctx.Query("name"),
+		NextPageCursor:       ctx.Query("nextPageCursor"),
 		NbOfReturnedElements: nbOfReturnedElements,
 		Ids:                  ids,
 	}
