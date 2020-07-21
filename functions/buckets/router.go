@@ -6,7 +6,12 @@ import (
 	"log"
 )
 
-func NewRouter(h Handler) *ginadapter.GinLambda {
+func NewLambdaRouter(h Handler) *ginadapter.GinLambda {
+	router := NewRouter(h)
+	return ginadapter.New(router)
+}
+
+func NewRouter(h Handler) *gin.Engine {
 	router := gin.Default()
 	log.Printf("Defining routes")
 	router.GET("/buckets/:tenantId/:bucketId", h.FindById)
@@ -15,6 +20,5 @@ func NewRouter(h Handler) *ginadapter.GinLambda {
 	router.PUT("/buckets/:tenantId/:bucketId", h.Update)
 	router.DELETE("/buckets/:tenantId/:bucketId", h.Delete)
 	log.Printf("Routes defined")
-
-	return ginadapter.New(router)
+	return router
 }

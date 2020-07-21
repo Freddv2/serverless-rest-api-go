@@ -5,81 +5,84 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"testing"
-	"time"
 )
 
-var (
-	bucket1 = Bucket{
-		TenantId:         "dv2",
-		Id:               "1",
-		Name:             "An ETF Stocks bucket",
-		Description:      "Desc1",
-		Asset:            []Asset{{"SPY"}, {"QQQ"}, {"VFV"}},
-		CreationDate:     time.Now(),
-		LastModifiedDate: time.Now(),
-	}
-	bucket2 = Bucket{
-		TenantId:         "dv2",
-		Id:               "2",
-		Name:             "An ETF Bonds bucket",
-		Description:      "Desc2",
-		Asset:            []Asset{{"IEF"}, {"SHY"}},
-		CreationDate:     time.Now(),
-		LastModifiedDate: time.Now(),
-	}
-	buckets = []Bucket{bucket1, bucket2}
-)
-
-func initMock(t *testing.T) (s *service, r *MockRepository) {
-
+func initTestService(t *testing.T) (s *service, r *MockRepository) {
 	ctrl := gomock.NewController(t)
 	r = NewMockRepository(ctrl)
-
 	s = NewService(r)
 
 	return s, r
 }
 
-func TestCanFindBucketById(t *testing.T) {
-	service, mockRepo := initMock(t)
+func TestServiceCanFindById(t *testing.T) {
+	service, mockRepo := initTestService(t)
+	mockRepo.EXPECT().FindById(context.Background(), testBucket1.TenantId, testBucket1.Id).
+		Return(&testBucket1, nil)
 
-	mockRepo.EXPECT().FindById(context.Background(), bucket1.TenantId, bucket1.Id).Return(&bucket1, nil)
-	b, err := service.FindById(context.Background(), bucket1.TenantId, bucket1.Id)
+	b, err := service.FindById(context.Background(), testBucket1.TenantId, testBucket1.Id)
 
 	assert.NoError(t, err)
-	assert.Equal(t, bucket1, *b)
+	assert.Equal(t, testBucket1, *b)
 }
 
-func TestCanFindAllBucketByTenant(t *testing.T) {
-	service, mockRepo := initMock(t)
-
+func TestServiceCanSearch(t *testing.T) {
+	service, mockRepo := initTestService(t)
 	searchContext := SearchContext{
-		TenantId:             bucket1.TenantId,
+		TenantId:             testTenant,
 		Name:                 "",
 		NbOfReturnedElements: -1,
 		NextPageCursor:       "",
 		Ids:                  make([]string, 0),
 	}
-	mockRepo.EXPECT().Search(context.Background(), searchContext).Return(buckets, nil)
+	mockRepo.EXPECT().Search(context.Background(), searchContext).
+		Return(testBuckets, nil)
+
 	b, err := service.Search(context.Background(), searchContext)
 
 	assert.NoError(t, err)
-	assert.ElementsMatch(t, b, buckets)
+	assert.ElementsMatch(t, b, testBuckets)
 }
 
-func TestCanFindBucketsByName(t *testing.T) {
-	service, mockRepo := initMock(t)
+func TestCreateWhenDoesntExist(t *testing.T) {
+	service, mockRepo := initTestService(t)
+	mockRepo.EXPECT().FindByName(context.Background(), testTenant, testBucket1.Name).
+		Return(nil, nil)
+	mockRepo.EXPECT().CreateOrUpdate(context.Background(), gomock.AssignableToTypeOf(testBucket1))
 
-	searchContext := SearchContext{
-		TenantId:             bucket1.TenantId,
-		Name:                 "Stocks",
-		NbOfReturnedElements: -1,
-		NextPageCursor:       "",
-		Ids:                  make([]string, 0),
-	}
-	mockRepo.EXPECT().Search(context.Background(), searchContext).Return([]Bucket{bucket1}, nil)
-	b, err := service.Search(context.Background(), searchContext)
+	id, err := service.Create(context.Background(), testTenant, testBucket1)
 
 	assert.NoError(t, err)
-	assert.Contains(t, b, bucket1)
+	assert.NotNil(t, id)
+}
+
+func TestErrWhenCreateAndDoesntExist(t *testing.T) {
+	service, mockRepo := initTestService(t)
+	mockRepo.EXPECT().FindByName(context.Background(), testTenant, testBucket1.Name).
+		Return(&testBucket1, nil)
+
+	_, err := service.Create(context.Background(), testTenant, testBucket1)
+
+	assert.Error(t, err)
+}
+
+func TestUpdateWhenExists(t *testing.T) {
+	service, mockRepo := initTestService(t)
+	mockRepo.EXPECT().FindByName(context.Background(), testTenant, testBucket1.Name).
+		Return(&testBucket1, nil)
+	mockRepo.EXPECT().CreateOrUpdate(context.Background(), gomock.AssignableToTypeOf(testBucket1))
+
+	err := service.Update(context.Background(), testTenant, testBucket1)
+
+	assert.NoError(t, err)
+}
+
+func TestErrWhenUpdateAndDoesntExist(t *testing.T) {
+	service, mockRepo := initTestService(t)
+	mockRepo.EXPECT().FindByName(context.Background(), testTenant, testBucket1.Name).
+		Return(nil, nil)
+
+	err := service.Update(context.Background(), testTenant, testBucket1)
+
+	assert.Error(t, err)
 }

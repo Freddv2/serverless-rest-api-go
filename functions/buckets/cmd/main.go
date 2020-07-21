@@ -29,7 +29,7 @@ func init() {
 	r := buckets.NewDynamoDBRepository(ddb)
 	s := buckets.NewService(r)
 	h := buckets.NewHandler(s)
-	router = buckets.NewRouter(h)
+	router = buckets.NewLambdaRouter(h)
 }
 
 func main() {
