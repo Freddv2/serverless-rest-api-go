@@ -6,7 +6,7 @@ import (
 
 type Bucket struct {
 	TenantId         string    `json:"tenantId"`
-	Id               string    `json:"id"`
+	BucketId         string    `json:"bucketId"`
 	Name             string    `json:"name"`
 	Description      string    `json:"description"`
 	Asset            []Asset   `json:"asset"`

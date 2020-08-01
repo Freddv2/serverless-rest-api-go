@@ -21,7 +21,7 @@ func (h *handler) FindById(ctx *gin.Context) {
 	bucketId := ctx.Param("bucketId")
 	bucket, err := h.service.FindById(ctx, tenantId, bucketId)
 	if errors.Is(err, ErrNotFound) {
-		ctx.JSON(404, "Not Found")
+		ctx.String(404, "Not Found")
 	} else if err != nil {
 		ctx.JSON(500, err)
 	}
@@ -63,12 +63,12 @@ func (h *handler) Create(ctx *gin.Context) {
 
 	id, err := h.service.Create(ctx, tenantId, bucket)
 	if errors.Is(err, ErrAlreadyExists) {
-		ctx.JSON(409, "Already Exists")
+		ctx.String(409, "Already Exists")
 	} else if err != nil {
 		ctx.JSON(500, err)
 	}
 
-	ctx.JSON(201, id)
+	ctx.String(201, id)
 }
 
 func (h *handler) Update(ctx *gin.Context) {
@@ -82,12 +82,12 @@ func (h *handler) Update(ctx *gin.Context) {
 
 	err = h.service.Update(ctx, tenantId, bucket)
 	if errors.Is(err, ErrNotFound) {
-		ctx.JSON(404, "Not Found")
+		ctx.String(404, "Not Found")
 	} else if err != nil {
 		ctx.JSON(500, err)
 	}
 
-	ctx.JSON(200, "")
+	ctx.String(200, "")
 }
 
 func (h *handler) Delete(ctx *gin.Context) {
@@ -98,5 +98,5 @@ func (h *handler) Delete(ctx *gin.Context) {
 	if err != nil {
 		ctx.JSON(500, err)
 	}
-	ctx.JSON(200, "")
+	ctx.String(200, "")
 }

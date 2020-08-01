@@ -6,7 +6,7 @@ var (
 	testTenant  = "dv2"
 	testBucket1 = Bucket{
 		TenantId:         testTenant,
-		Id:               "1",
+		BucketId:         "1",
 		Name:             "An ETF Stocks bucket",
 		Description:      "Desc1",
 		Asset:            []Asset{{"SPY"}, {"QQQ"}, {"VFV"}},
@@ -15,7 +15,7 @@ var (
 	}
 	testBucket2 = Bucket{
 		TenantId:         testTenant,
-		Id:               "2",
+		BucketId:         "2",
 		Name:             "An ETF Bonds bucket",
 		Description:      "Desc2",
 		Asset:            []Asset{{"IEF"}, {"SHY"}},

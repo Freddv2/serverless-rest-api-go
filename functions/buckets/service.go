@@ -34,7 +34,7 @@ func (s *service) Create(ctx context.Context, tenantId string, bucket Bucket) (s
 		return "", ErrAlreadyExists
 	} else {
 		id := ksuid.New().String()
-		bucket.Id = id
+		bucket.BucketId = id
 		bucket.CreationDate = time.Now()
 		bucket.LastModifiedDate = time.Now()
 		return id, s.repository.CreateOrUpdate(ctx, bucket)

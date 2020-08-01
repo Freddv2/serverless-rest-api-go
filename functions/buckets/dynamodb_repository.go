@@ -13,7 +13,7 @@ const (
 )
 
 type dynamoDBRepository struct {
-	session *dynamodb.DynamoDB
+	db *dynamodb.DynamoDB
 }
 
 func NewDynamoDBRepository(dynamoDBClient *dynamodb.DynamoDB) *dynamoDBRepository {
@@ -34,7 +34,7 @@ func (r *dynamoDBRepository) FindById(ctx context.Context, tenantId string, buck
 		},
 	}
 
-	result, err := r.session.GetItemWithContext(ctx, input)
+	result, err := r.db.GetItemWithContext(ctx, input)
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +72,7 @@ func (r *dynamoDBRepository) FindByName(ctx context.Context, tenantId string, bu
 		FilterExpression: aws.String(":name = :bucketName"),
 		Limit:            aws.Int64(1),
 	}
-	result, err := r.session.QueryWithContext(ctx, input)
+	result, err := r.db.QueryWithContext(ctx, input)
 	if err != nil {
 		return nil, err
 	}
@@ -96,7 +96,7 @@ func (r *dynamoDBRepository) CreateOrUpdate(ctx context.Context, bucket Bucket) 
 		TableName: aws.String(tableName),
 		Item:      item,
 	}
-	_, err = r.session.PutItemWithContext(ctx, input)
+	_, err = r.db.PutItemWithContext(ctx, input)
 	return err
 }
 
@@ -112,7 +112,7 @@ func (r *dynamoDBRepository) Delete(ctx context.Context, tenantId string, bucket
 			},
 		},
 	}
-	_, err := r.session.DeleteItemWithContext(ctx, input)
+	_, err := r.db.DeleteItemWithContext(ctx, input)
 	return err
 }
 
@@ -147,7 +147,7 @@ func (r *dynamoDBRepository) Search(ctx context.Context, searchCtx SearchContext
 		ScanIndexForward:       aws.Bool(false),
 	}
 
-	result, err := r.session.QueryWithContext(ctx, input)
+	result, err := r.db.QueryWithContext(ctx, input)
 	if err != nil {
 		return nil, err
 	}

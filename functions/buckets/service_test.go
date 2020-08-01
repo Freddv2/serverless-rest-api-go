@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"testing"
 )
 
@@ -17,12 +18,12 @@ func initTestService(t *testing.T) (s *service, r *MockRepository) {
 
 func TestService_FindById(t *testing.T) {
 	service, mockRepo := initTestService(t)
-	mockRepo.EXPECT().FindById(context.Background(), testBucket1.TenantId, testBucket1.Id).
+	mockRepo.EXPECT().FindById(context.Background(), testBucket1.TenantId, testBucket1.BucketId).
 		Return(&testBucket1, nil)
 
-	b, err := service.FindById(context.Background(), testBucket1.TenantId, testBucket1.Id)
+	b, err := service.FindById(context.Background(), testBucket1.TenantId, testBucket1.BucketId)
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, testBucket1, *b)
 }
 
@@ -40,7 +41,7 @@ func TestService_Search(t *testing.T) {
 
 	b, err := service.Search(context.Background(), searchContext)
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.ElementsMatch(t, b, testBuckets)
 }
 
@@ -52,7 +53,7 @@ func TestService_CreateWhenDoesntExist(t *testing.T) {
 
 	id, err := service.Create(context.Background(), testTenant, testBucket1)
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, id)
 }
 
@@ -89,9 +90,9 @@ func TestService_UpdateErrWhenDoesntExist(t *testing.T) {
 
 func TestService_Delete(t *testing.T) {
 	service, mockRepo := initTestService(t)
-	mockRepo.EXPECT().Delete(context.Background(), testTenant, testBucket1.Id).Return(nil)
+	mockRepo.EXPECT().Delete(context.Background(), testTenant, testBucket1.BucketId).Return(nil)
 
-	err := service.Delete(context.Background(), testTenant, testBucket1.Id)
+	err := service.Delete(context.Background(), testTenant, testBucket1.BucketId)
 
 	assert.NoError(t, err)
 }
