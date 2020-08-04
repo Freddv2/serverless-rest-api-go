@@ -5,7 +5,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"testing"
 )
@@ -19,6 +18,7 @@ func initLocalDynamoDB() *dynamodb.DynamoDB {
 	}
 	sess := session.Must(session.NewSession(cfg))
 	db := dynamodb.New(sess)
+
 	createTableDef := &dynamodb.CreateTableInput{
 		TableName: aws.String(tableName),
 		AttributeDefinitions: []*dynamodb.AttributeDefinition{
@@ -62,16 +62,20 @@ func initTestRepository() {
 	testRepo = NewDynamoDBRepository(db)
 }
 
-func TestDynamoDBRepository_FindById(t *testing.T) {
-	initTestRepository()
-	defer destroyTestDynamoDB(testRepo.db)
-
+func createTestBuckets() {
 	if err := testRepo.CreateOrUpdate(context.Background(), testBucket1); err != nil {
 		panic(err)
 	}
 	if err := testRepo.CreateOrUpdate(context.Background(), testBucket2); err != nil {
 		panic(err)
 	}
+}
+
+func TestDynamoDBRepository_FindById(t *testing.T) {
+	initTestRepository()
+	defer destroyTestDynamoDB(testRepo.db)
+
+	createTestBuckets()
 
 	actualBucket, err := testRepo.FindById(context.Background(), testTenant, testBucket1.BucketId)
 
@@ -79,36 +83,66 @@ func TestDynamoDBRepository_FindById(t *testing.T) {
 	require.Equal(t, testBucket1, *actualBucket)
 }
 
-func TestCanSearchByName(t *testing.T) {
-	service, mockRepo := initTestService(t)
+func TestDynamoDBRepository_FindByName(t *testing.T) {
+	initTestRepository()
+	defer destroyTestDynamoDB(testRepo.db)
 
-	searchContext := SearchContext{
-		TenantId:             testBucket1.TenantId,
-		Name:                 "Stocks",
-		NbOfReturnedElements: -1,
-		NextPageCursor:       "",
-		Ids:                  make([]string, 0),
-	}
-	mockRepo.EXPECT().Search(context.Background(), searchContext).Return([]Bucket{testBucket1}, nil)
-	b, err := service.Search(context.Background(), searchContext)
+	createTestBuckets()
 
-	assert.NoError(t, err)
-	assert.Contains(t, b, testBucket1)
+	actualBucket, err := testRepo.FindByName(context.Background(), testTenant, testBucket1.Name)
+
+	require.NoError(t, err)
+	require.Equal(t, testBucket1, *actualBucket)
 }
 
-func TestCanSearchAndLimitTheNbOfReturnedElements(t *testing.T) {
-	service, mockRepo := initTestService(t)
+func TestDynamoDBRepository_CreateOrUpdate(t *testing.T) {
+	initTestRepository()
+	defer destroyTestDynamoDB(testRepo.db)
+
+	createTestBuckets()
+
+	actualBucket, err := testRepo.FindById(context.Background(), testTenant, testBucket1.BucketId)
+	require.NoError(t, err)
+	require.Equal(t, testBucket1, *actualBucket)
+
+	actualBucket, err = testRepo.FindById(context.Background(), testTenant, testBucket2.BucketId)
+	require.NoError(t, err)
+	require.Equal(t, testBucket2, *actualBucket)
+}
+
+func TestDynamoDBRepository_Delete(t *testing.T) {
+	initTestRepository()
+	defer destroyTestDynamoDB(testRepo.db)
+
+	createTestBuckets()
+
+	err := testRepo.Delete(context.Background(), testTenant, testBucket1.BucketId)
+
+	require.NoError(t, err)
+
+	actualBucket, err := testRepo.FindById(context.Background(), testTenant, testBucket1.BucketId)
+
+	require.NoError(t, err)
+	require.Nil(t, actualBucket)
+}
+
+func TestDynamoDBRepository_SearchWithLimit(t *testing.T) {
+	initTestRepository()
+	defer destroyTestDynamoDB(testRepo.db)
+
+	createTestBuckets()
 
 	searchContext := SearchContext{
 		TenantId:             testBucket1.TenantId,
 		Name:                 "",
 		NbOfReturnedElements: 1,
 		NextPageCursor:       "",
-		Ids:                  make([]string, 0),
+		Ids:                  nil,
 	}
-	mockRepo.EXPECT().Search(context.Background(), searchContext).Return([]Bucket{testBucket1}, nil)
-	b, err := service.Search(context.Background(), searchContext)
 
-	assert.NoError(t, err)
-	assert.Contains(t, b, testBucket1)
+	actualBuckets, err := testRepo.Search(context.Background(), searchContext)
+
+	require.NoError(t, err)
+	require.Len(t, actualBuckets, 1)
+	require.Equal(t, actualBuckets[0], testBucket1)
 }
