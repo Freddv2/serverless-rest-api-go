@@ -146,3 +146,45 @@ func TestDynamoDBRepository_SearchWithLimit(t *testing.T) {
 	require.Len(t, actualBuckets, 1)
 	require.Equal(t, actualBuckets[0], testBucket1)
 }
+
+func TestDynamoDBRepository_SearchByName(t *testing.T) {
+	initTestRepository()
+	defer destroyTestDynamoDB(testRepo.db)
+
+	createTestBuckets()
+
+	searchContext := SearchContext{
+		TenantId:             testBucket1.TenantId,
+		Name:                 testBucket1.Name,
+		NbOfReturnedElements: 0,
+		NextPageCursor:       "",
+		Ids:                  nil,
+	}
+
+	actualBuckets, err := testRepo.Search(context.Background(), searchContext)
+
+	require.NoError(t, err)
+	require.Len(t, actualBuckets, 1)
+	require.Equal(t, actualBuckets[0], testBucket1)
+}
+
+func TestDynamoDBRepository_SearchByIds(t *testing.T) {
+	initTestRepository()
+	defer destroyTestDynamoDB(testRepo.db)
+
+	createTestBuckets()
+
+	searchContext := SearchContext{
+		TenantId:             testBucket1.TenantId,
+		Name:                 "",
+		NbOfReturnedElements: 0,
+		NextPageCursor:       "",
+		Ids:                  []string{testBucket1.BucketId},
+	}
+
+	actualBuckets, err := testRepo.Search(context.Background(), searchContext)
+
+	require.NoError(t, err)
+	require.Len(t, actualBuckets, 1)
+	require.Equal(t, actualBuckets[0], testBucket1)
+}

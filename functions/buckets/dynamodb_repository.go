@@ -5,6 +5,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
+	"strconv"
 	"strings"
 )
 
@@ -122,48 +123,41 @@ func (r *dynamoDBRepository) Delete(ctx context.Context, tenantId string, bucket
 func (r *dynamoDBRepository) Search(ctx context.Context, searchCtx SearchContext) ([]Bucket, error) {
 
 	buckets := make([]Bucket, 0)
-
-	var filterExp string
+	filterExp := ""
 	expNames := make(map[string]*string)
 	expValues := make(map[string]*dynamodb.AttributeValue)
+
+	filterExp = "#tenantId = :tenantId"
+	expNames["#tenantId"] = aws.String("tenantId")
+	expValues[":tenantId"] = &dynamodb.AttributeValue{S: aws.String(searchCtx.TenantId)}
+
 	if searchCtx.Name != "" {
-		filterExp += "#name contains :name and"
+		filterExp += "and contains(#name, :name)"
 		expNames["#name"] = aws.String("name")
-		expValues[":name"] = &dynamodb.AttributeValue{
-			S: aws.String(searchCtx.Name),
-		}
+		expValues[":name"] = &dynamodb.AttributeValue{S: aws.String(searchCtx.Name)}
 	}
 	if len(searchCtx.Ids) > 0 {
-		filterExp += " #bucketId in :bucketIds"
-		expNames["#bucketId"] = aws.String("name")
-		expValues[":bucketId"] = &dynamodb.AttributeValue{
-			NS: aws.StringSlice(searchCtx.Ids),
+		keys := make([]string, len(searchCtx.Ids))
+		for i, id := range searchCtx.Ids {
+			keys[i] = ":bucketId" + strconv.Itoa(i)
+			expValues[keys[i]] = &dynamodb.AttributeValue{S: aws.String(id)}
 		}
+		filterExp += " and #bucketId in(" + strings.Join(keys, ",") + ")"
+		expNames["#bucketId"] = aws.String("bucketId")
 	}
-	filterExp = strings.TrimSuffix(filterExp, "and")
-
-	query := &dynamodb.QueryInput{
-		TableName: aws.String(tableName),
-		KeyConditions: map[string]*dynamodb.Condition{
-			"tenantId": {
-				ComparisonOperator: aws.String("EQ"),
-				AttributeValueList: []*dynamodb.AttributeValue{
-					{
-						S: aws.String(searchCtx.TenantId),
-					},
-				},
-			},
-		},
+	scan := &dynamodb.ScanInput{
+		TableName:                 aws.String(tableName),
+		FilterExpression:          aws.String(filterExp),
+		ExpressionAttributeNames:  expNames,
+		ExpressionAttributeValues: expValues,
 	}
 	if filterExp != "" {
-		query.ExpressionAttributeNames = expNames
-		query.ExpressionAttributeValues = expValues
-		query.FilterExpression = aws.String(filterExp)
+		scan.FilterExpression = aws.String(filterExp)
 	}
 	if searchCtx.NbOfReturnedElements > 0 {
-		query.Limit = aws.Int64(int64(searchCtx.NbOfReturnedElements))
+		scan.Limit = aws.Int64(int64(searchCtx.NbOfReturnedElements))
 	}
-	result, err := r.db.QueryWithContext(ctx, query)
+	result, err := r.db.ScanWithContext(ctx, scan)
 	if err != nil {
 		return nil, err
 	}
