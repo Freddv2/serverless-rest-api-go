@@ -126,6 +126,27 @@ func TestDynamoDBRepository_Delete(t *testing.T) {
 	require.Nil(t, actualBucket)
 }
 
+func TestDynamoDBRepository_SearchByTenant(t *testing.T) {
+	initTestRepository()
+	defer destroyTestDynamoDB(testRepo.db)
+
+	createTestBuckets()
+
+	searchContext := SearchContext{
+		TenantId:             testBucket1.TenantId,
+		Name:                 "",
+		NbOfReturnedElements: 0,
+		NextPageCursor:       "",
+		Ids:                  nil,
+	}
+
+	actualBuckets, err := testRepo.Search(context.Background(), searchContext)
+
+	require.NoError(t, err)
+	require.Len(t, actualBuckets, 2)
+	require.Equal(t, testBuckets, actualBuckets)
+}
+
 func TestDynamoDBRepository_SearchWithLimit(t *testing.T) {
 	initTestRepository()
 	defer destroyTestDynamoDB(testRepo.db)
