@@ -1,6 +1,7 @@
-package buckets
+package test
 
 import (
+	"buckets"
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -13,17 +14,17 @@ import (
 	"testing"
 )
 
-func initTestHandler(t *testing.T) (h *handler, s *MockService) {
+func initTestHandler(t *testing.T) (h *buckets.Handler, s *MockService) {
 	ctrl := gomock.NewController(t)
 	s = NewMockService(ctrl)
-	h = NewHandler(s)
+	h = buckets.NewHandler(s)
 
 	return h, s
 }
 
-func initTestHttpServer(h *handler) *httptest.Server {
+func initTestHttpServer(h *buckets.Handler) *httptest.Server {
 	//Start a test http server with the handler
-	return httptest.NewServer(NewRouter(h))
+	return httptest.NewServer(buckets.NewRouter(h))
 }
 
 func TestHandler_FindById(t *testing.T) {
@@ -40,7 +41,7 @@ func TestHandler_FindById(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 200, resp.StatusCode)
 
-	var b Bucket
+	var b buckets.Bucket
 	_ = json.NewDecoder(resp.Body).Decode(&b)
 	assert.Equal(t, testBucket1, b)
 }
@@ -49,7 +50,7 @@ func TestHandler_Search(t *testing.T) {
 	handler, mockService := initTestHandler(t)
 	ts := initTestHttpServer(handler)
 
-	expectedSC := SearchContext{
+	expectedSC := buckets.SearchContext{
 		TenantId:             testTenant,
 		Name:                 testBucket1.Name,
 		NextPageCursor:       "",
@@ -59,7 +60,7 @@ func TestHandler_Search(t *testing.T) {
 
 	mockService.EXPECT().
 		Search(gomock.Any(), expectedSC).
-		Return([]Bucket{testBucket1}, nil)
+		Return([]buckets.Bucket{testBucket1}, nil)
 
 	req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/buckets/%s", ts.URL, testTenant), nil)
 	q := req.URL.Query()
@@ -72,7 +73,7 @@ func TestHandler_Search(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 200, resp.StatusCode)
 
-	var actualBuckets []Bucket
+	var actualBuckets []buckets.Bucket
 	_ = json.NewDecoder(resp.Body).Decode(&actualBuckets)
 	assert.Contains(t, actualBuckets, testBucket1)
 }

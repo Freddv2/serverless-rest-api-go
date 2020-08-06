@@ -6,12 +6,12 @@ import (
 	"log"
 )
 
-func NewLambdaRouter(h Handler) *ginadapter.GinLambda {
+func NewLambdaRouter(h handler) *ginadapter.GinLambda {
 	router := NewRouter(h)
 	return ginadapter.New(router)
 }
 
-func NewRouter(h Handler) *gin.Engine {
+func NewRouter(h handler) *gin.Engine {
 	router := gin.Default()
 	log.Printf("Defining routes")
 	router.GET("/buckets/:tenantId/:bucketId", h.FindById)

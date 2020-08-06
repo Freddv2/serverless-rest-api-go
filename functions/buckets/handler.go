@@ -8,15 +8,15 @@ import (
 	"strings"
 )
 
-type handler struct {
-	service Service
+type Handler struct {
+	service service
 }
 
-func NewHandler(service Service) *handler {
-	return &handler{service: service}
+func NewHandler(service service) *Handler {
+	return &Handler{service: service}
 }
 
-func (h *handler) FindById(ctx *gin.Context) {
+func (h *Handler) FindById(ctx *gin.Context) {
 	tenantId := ctx.Param("tenantId")
 	bucketId := ctx.Param("bucketId")
 	bucket, err := h.service.FindById(ctx, tenantId, bucketId)
@@ -29,7 +29,7 @@ func (h *handler) FindById(ctx *gin.Context) {
 	ctx.JSON(200, bucket)
 }
 
-func (h *handler) Search(ctx *gin.Context) {
+func (h *Handler) Search(ctx *gin.Context) {
 	var nbOfReturnedElements int
 	if nb := ctx.Query("nbOfReturnedElement"); nb != "" {
 		nbOfReturnedElements, _ = strconv.Atoi(nb)
@@ -52,7 +52,7 @@ func (h *handler) Search(ctx *gin.Context) {
 	ctx.JSON(200, buckets)
 }
 
-func (h *handler) Create(ctx *gin.Context) {
+func (h *Handler) Create(ctx *gin.Context) {
 	tenantId := ctx.Param("tenantId")
 
 	var bucket Bucket
@@ -71,7 +71,7 @@ func (h *handler) Create(ctx *gin.Context) {
 	}
 }
 
-func (h *handler) Update(ctx *gin.Context) {
+func (h *Handler) Update(ctx *gin.Context) {
 	tenantId := ctx.Param("tenantId")
 
 	var bucket Bucket
@@ -90,7 +90,7 @@ func (h *handler) Update(ctx *gin.Context) {
 	ctx.String(200, "")
 }
 
-func (h *handler) Delete(ctx *gin.Context) {
+func (h *Handler) Delete(ctx *gin.Context) {
 	tenantId := ctx.Param("tenantId")
 	bucketId := ctx.Param("bucketId")
 

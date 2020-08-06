@@ -10,20 +10,20 @@ import (
 )
 
 const (
-	tableName = "BUCKET"
+	TableName = "BUCKET"
 )
 
-type dynamoDBRepository struct {
-	db *dynamodb.DynamoDB
+type DynamoDBRepository struct {
+	DynamoDB *dynamodb.DynamoDB
 }
 
-func NewDynamoDBRepository(dynamoDBClient *dynamodb.DynamoDB) *dynamoDBRepository {
-	return &dynamoDBRepository{dynamoDBClient}
+func NewDynamoDBRepository(dynamoDBClient *dynamodb.DynamoDB) *DynamoDBRepository {
+	return &DynamoDBRepository{dynamoDBClient}
 }
 
-func (r *dynamoDBRepository) FindById(ctx context.Context, tenantId string, bucketId string) (*Bucket, error) {
+func (r *DynamoDBRepository) FindById(ctx context.Context, tenantId string, bucketId string) (*Bucket, error) {
 	input := &dynamodb.GetItemInput{
-		TableName: aws.String(tableName),
+		TableName: aws.String(TableName),
 		Key: map[string]*dynamodb.AttributeValue{
 			"tenantId": {
 				S: &tenantId,
@@ -34,7 +34,7 @@ func (r *dynamoDBRepository) FindById(ctx context.Context, tenantId string, buck
 		},
 	}
 
-	result, err := r.db.GetItemWithContext(ctx, input)
+	result, err := r.DynamoDB.GetItemWithContext(ctx, input)
 	if err != nil {
 		return nil, err
 	}
@@ -51,10 +51,10 @@ func (r *dynamoDBRepository) FindById(ctx context.Context, tenantId string, buck
 	return bucket, nil
 }
 
-func (r *dynamoDBRepository) FindByName(ctx context.Context, tenantId string, bucketName string) (*Bucket, error) {
+func (r *DynamoDBRepository) FindByName(ctx context.Context, tenantId string, bucketName string) (*Bucket, error) {
 	var bucket *Bucket
 	input := &dynamodb.QueryInput{
-		TableName: aws.String(tableName),
+		TableName: aws.String(TableName),
 		KeyConditions: map[string]*dynamodb.Condition{
 			"tenantId": {
 				ComparisonOperator: aws.String("EQ"),
@@ -76,7 +76,7 @@ func (r *dynamoDBRepository) FindByName(ctx context.Context, tenantId string, bu
 		FilterExpression: aws.String("#name = :bucketName"),
 		Limit:            aws.Int64(1),
 	}
-	result, err := r.db.QueryWithContext(ctx, input)
+	result, err := r.DynamoDB.QueryWithContext(ctx, input)
 	if err != nil {
 		return nil, err
 	}
@@ -92,22 +92,22 @@ func (r *dynamoDBRepository) FindByName(ctx context.Context, tenantId string, bu
 	return bucket, nil
 }
 
-func (r *dynamoDBRepository) CreateOrUpdate(ctx context.Context, bucket Bucket) error {
+func (r *DynamoDBRepository) CreateOrUpdate(ctx context.Context, bucket Bucket) error {
 	item, err := dynamodbattribute.MarshalMap(bucket)
 	if err != nil {
 		return err
 	}
 	input := &dynamodb.PutItemInput{
-		TableName: aws.String(tableName),
+		TableName: aws.String(TableName),
 		Item:      item,
 	}
-	_, err = r.db.PutItemWithContext(ctx, input)
+	_, err = r.DynamoDB.PutItemWithContext(ctx, input)
 	return err
 }
 
-func (r *dynamoDBRepository) Delete(ctx context.Context, tenantId string, bucketId string) error {
+func (r *DynamoDBRepository) Delete(ctx context.Context, tenantId string, bucketId string) error {
 	input := &dynamodb.DeleteItemInput{
-		TableName: aws.String(tableName),
+		TableName: aws.String(TableName),
 		Key: map[string]*dynamodb.AttributeValue{
 			"tenantId": {
 				S: aws.String(tenantId),
@@ -117,11 +117,11 @@ func (r *dynamoDBRepository) Delete(ctx context.Context, tenantId string, bucket
 			},
 		},
 	}
-	_, err := r.db.DeleteItemWithContext(ctx, input)
+	_, err := r.DynamoDB.DeleteItemWithContext(ctx, input)
 	return err
 }
 
-func (r *dynamoDBRepository) Search(ctx context.Context, searchCtx SearchContext) ([]Bucket, error) {
+func (r *DynamoDBRepository) Search(ctx context.Context, searchCtx SearchContext) ([]Bucket, error) {
 
 	buckets := make([]Bucket, 0)
 	filterExp := ""
@@ -147,7 +147,7 @@ func (r *dynamoDBRepository) Search(ctx context.Context, searchCtx SearchContext
 		expNames["#bucketId"] = aws.String("bucketId")
 	}
 	scan := &dynamodb.ScanInput{
-		TableName:                 aws.String(tableName),
+		TableName:                 aws.String(TableName),
 		FilterExpression:          aws.String(filterExp),
 		ExpressionAttributeNames:  expNames,
 		ExpressionAttributeValues: expValues,
@@ -158,7 +158,7 @@ func (r *dynamoDBRepository) Search(ctx context.Context, searchCtx SearchContext
 	if searchCtx.NbOfReturnedElements > 0 {
 		scan.Limit = aws.Int64(int64(searchCtx.NbOfReturnedElements))
 	}
-	result, err := r.db.ScanWithContext(ctx, scan)
+	result, err := r.DynamoDB.ScanWithContext(ctx, scan)
 	if err != nil {
 		return nil, err
 	}

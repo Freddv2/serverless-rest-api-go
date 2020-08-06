@@ -1,6 +1,7 @@
-package buckets
+package test
 
 import (
+	"buckets"
 	"context"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -9,7 +10,7 @@ import (
 	"testing"
 )
 
-var testRepo *dynamoDBRepository
+var testRepo *buckets.DynamoDBRepository
 
 func initLocalDynamoDB() *dynamodb.DynamoDB {
 	cfg := &aws.Config{
@@ -20,7 +21,7 @@ func initLocalDynamoDB() *dynamodb.DynamoDB {
 	db := dynamodb.New(sess)
 
 	createTableDef := &dynamodb.CreateTableInput{
-		TableName: aws.String(tableName),
+		TableName: aws.String(buckets.TableName),
 		AttributeDefinitions: []*dynamodb.AttributeDefinition{
 			{
 				AttributeName: aws.String("tenantId"),
@@ -52,14 +53,14 @@ func initLocalDynamoDB() *dynamodb.DynamoDB {
 
 func destroyTestDynamoDB(db *dynamodb.DynamoDB) {
 	deleteTableReq := &dynamodb.DeleteTableInput{
-		TableName: aws.String(tableName),
+		TableName: aws.String(buckets.TableName),
 	}
 	_, _ = db.DeleteTable(deleteTableReq)
 }
 
 func initTestRepository() {
 	db := initLocalDynamoDB()
-	testRepo = NewDynamoDBRepository(db)
+	testRepo = buckets.NewDynamoDBRepository(db)
 }
 
 func createTestBuckets() {
@@ -73,7 +74,7 @@ func createTestBuckets() {
 
 func TestDynamoDBRepository_FindById(t *testing.T) {
 	initTestRepository()
-	defer destroyTestDynamoDB(testRepo.db)
+	defer destroyTestDynamoDB(testRepo.DynamoDB)
 
 	createTestBuckets()
 
@@ -85,7 +86,7 @@ func TestDynamoDBRepository_FindById(t *testing.T) {
 
 func TestDynamoDBRepository_FindByName(t *testing.T) {
 	initTestRepository()
-	defer destroyTestDynamoDB(testRepo.db)
+	defer destroyTestDynamoDB(testRepo.DynamoDB)
 
 	createTestBuckets()
 
@@ -97,7 +98,7 @@ func TestDynamoDBRepository_FindByName(t *testing.T) {
 
 func TestDynamoDBRepository_CreateOrUpdate(t *testing.T) {
 	initTestRepository()
-	defer destroyTestDynamoDB(testRepo.db)
+	defer destroyTestDynamoDB(testRepo.DynamoDB)
 
 	createTestBuckets()
 
@@ -112,7 +113,7 @@ func TestDynamoDBRepository_CreateOrUpdate(t *testing.T) {
 
 func TestDynamoDBRepository_Delete(t *testing.T) {
 	initTestRepository()
-	defer destroyTestDynamoDB(testRepo.db)
+	defer destroyTestDynamoDB(testRepo.DynamoDB)
 
 	createTestBuckets()
 
@@ -128,11 +129,11 @@ func TestDynamoDBRepository_Delete(t *testing.T) {
 
 func TestDynamoDBRepository_SearchByTenant(t *testing.T) {
 	initTestRepository()
-	defer destroyTestDynamoDB(testRepo.db)
+	defer destroyTestDynamoDB(testRepo.DynamoDB)
 
 	createTestBuckets()
 
-	searchContext := SearchContext{
+	searchContext := buckets.SearchContext{
 		TenantId:             testBucket1.TenantId,
 		Name:                 "",
 		NbOfReturnedElements: 0,
@@ -149,11 +150,11 @@ func TestDynamoDBRepository_SearchByTenant(t *testing.T) {
 
 func TestDynamoDBRepository_SearchWithLimit(t *testing.T) {
 	initTestRepository()
-	defer destroyTestDynamoDB(testRepo.db)
+	defer destroyTestDynamoDB(testRepo.DynamoDB)
 
 	createTestBuckets()
 
-	searchContext := SearchContext{
+	searchContext := buckets.SearchContext{
 		TenantId:             testBucket1.TenantId,
 		Name:                 "",
 		NbOfReturnedElements: 1,
@@ -170,11 +171,11 @@ func TestDynamoDBRepository_SearchWithLimit(t *testing.T) {
 
 func TestDynamoDBRepository_SearchByName(t *testing.T) {
 	initTestRepository()
-	defer destroyTestDynamoDB(testRepo.db)
+	defer destroyTestDynamoDB(testRepo.DynamoDB)
 
 	createTestBuckets()
 
-	searchContext := SearchContext{
+	searchContext := buckets.SearchContext{
 		TenantId:             testBucket1.TenantId,
 		Name:                 testBucket1.Name,
 		NbOfReturnedElements: 0,
@@ -191,11 +192,11 @@ func TestDynamoDBRepository_SearchByName(t *testing.T) {
 
 func TestDynamoDBRepository_SearchByIds(t *testing.T) {
 	initTestRepository()
-	defer destroyTestDynamoDB(testRepo.db)
+	defer destroyTestDynamoDB(testRepo.DynamoDB)
 
 	createTestBuckets()
 
-	searchContext := SearchContext{
+	searchContext := buckets.SearchContext{
 		TenantId:             testBucket1.TenantId,
 		Name:                 "",
 		NbOfReturnedElements: 0,

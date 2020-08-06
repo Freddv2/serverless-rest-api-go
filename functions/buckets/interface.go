@@ -5,7 +5,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type Handler interface {
+type handler interface {
 	FindById(ctx *gin.Context)
 	Search(ctx *gin.Context)
 	Create(ctx *gin.Context)
@@ -14,7 +14,7 @@ type Handler interface {
 }
 
 //go:generate mockgen -destination=mock_service.go -package=buckets -self_package buckets . Service
-type Service interface {
+type service interface {
 	FindById(ctx context.Context, tenantId string, bucketId string) (*Bucket, error)
 	Search(ctx context.Context, searchContext SearchContext) ([]Bucket, error)
 	Create(ctx context.Context, tenantId string, bucket Bucket) (string, error)
@@ -23,7 +23,7 @@ type Service interface {
 }
 
 //go:generate mockgen -destination=mock_repository.go -package=buckets -self_package buckets . Repository
-type Repository interface {
+type repository interface {
 	FindById(ctx context.Context, tenantId string, bucketId string) (*Bucket, error)
 	FindByName(ctx context.Context, tenantId string, bucketName string) (*Bucket, error)
 	Search(ctx context.Context, searchContext SearchContext) ([]Bucket, error)

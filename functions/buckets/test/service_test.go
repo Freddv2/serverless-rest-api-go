@@ -1,6 +1,7 @@
-package buckets
+package test
 
 import (
+	"buckets"
 	"context"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
@@ -8,10 +9,10 @@ import (
 	"testing"
 )
 
-func initTestService(t *testing.T) (s *service, r *MockRepository) {
+func initTestService(t *testing.T) (s *buckets.Service, r *MockRepository) {
 	ctrl := gomock.NewController(t)
 	r = NewMockRepository(ctrl)
-	s = NewService(r)
+	s = buckets.NewService(r)
 
 	return s, r
 }
@@ -20,7 +21,6 @@ func TestService_FindById(t *testing.T) {
 	service, mockRepo := initTestService(t)
 	mockRepo.EXPECT().FindById(context.Background(), testBucket1.TenantId, testBucket1.BucketId).
 		Return(&testBucket1, nil)
-
 	b, err := service.FindById(context.Background(), testBucket1.TenantId, testBucket1.BucketId)
 
 	require.NoError(t, err)
@@ -29,7 +29,7 @@ func TestService_FindById(t *testing.T) {
 
 func TestService_Search(t *testing.T) {
 	service, mockRepo := initTestService(t)
-	searchContext := SearchContext{
+	searchContext := buckets.SearchContext{
 		TenantId:             testTenant,
 		Name:                 "",
 		NbOfReturnedElements: -1,
