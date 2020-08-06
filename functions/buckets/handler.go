@@ -63,12 +63,12 @@ func (h *handler) Create(ctx *gin.Context) {
 
 	id, err := h.service.Create(ctx, tenantId, bucket)
 	if errors.Is(err, ErrAlreadyExists) {
-		ctx.String(409, "Already Exists")
+		ctx.String(409, "Bucket already exists")
 	} else if err != nil {
 		ctx.JSON(500, err)
+	} else {
+		ctx.String(201, id)
 	}
-
-	ctx.String(201, id)
 }
 
 func (h *handler) Update(ctx *gin.Context) {

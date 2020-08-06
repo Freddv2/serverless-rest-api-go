@@ -52,7 +52,7 @@ func (r *dynamoDBRepository) FindById(ctx context.Context, tenantId string, buck
 }
 
 func (r *dynamoDBRepository) FindByName(ctx context.Context, tenantId string, bucketName string) (*Bucket, error) {
-	bucket := &Bucket{}
+	var bucket *Bucket
 	input := &dynamodb.QueryInput{
 		TableName: aws.String(tableName),
 		KeyConditions: map[string]*dynamodb.Condition{
@@ -82,6 +82,7 @@ func (r *dynamoDBRepository) FindByName(ctx context.Context, tenantId string, bu
 	}
 
 	if len(result.Items) > 0 {
+		bucket = &Bucket{}
 		err = dynamodbattribute.UnmarshalMap(result.Items[0], bucket)
 		if err != nil {
 			return nil, err
@@ -132,7 +133,7 @@ func (r *dynamoDBRepository) Search(ctx context.Context, searchCtx SearchContext
 	expValues[":tenantId"] = &dynamodb.AttributeValue{S: aws.String(searchCtx.TenantId)}
 
 	if searchCtx.Name != "" {
-		filterExp += "and contains(#name, :name)"
+		filterExp += " and contains(#name, :name)"
 		expNames["#name"] = aws.String("name")
 		expValues[":name"] = &dynamodb.AttributeValue{S: aws.String(searchCtx.Name)}
 	}

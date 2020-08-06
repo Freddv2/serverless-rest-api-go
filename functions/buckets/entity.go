@@ -9,7 +9,7 @@ type Bucket struct {
 	BucketId         string    `json:"bucketId"`
 	Name             string    `json:"name"`
 	Description      string    `json:"description"`
-	Asset            []Asset   `json:"asset"`
+	Assets           []Asset   `json:"assets"`
 	CreationDate     time.Time `json:"creationDate"`
 	LastModifiedDate time.Time `json:"lastModifiedDate"`
 }
