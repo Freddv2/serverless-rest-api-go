@@ -15,11 +15,13 @@ import (
 
 var router *ginadapter.GinLambda
 
+// AWS Lambda Gin Router adapter
 func ginAdapter(ctx context.Context, req events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	// If no name is provided in the HTTP request body, throw an error
 	return router.ProxyWithContext(ctx, req)
 }
 
+//Init all the necessary services
 func init() {
 	sess, err := session.NewSession(&aws.Config{
 		Region: aws.String("ca-central-1"),
