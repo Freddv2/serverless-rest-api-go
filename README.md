@@ -1,5 +1,12 @@
 # Serverless GO Rest API example 
 
+## Summary
+
+This is an AWS serverless REST API written in Go that can manage "buckets". A bucket is simply a container of
+stocks and/or ETFs.
+
+The architecture tries to follow Uncle Bob's Clean Architecture.
+
 ## Compile
 
 ### Windows
