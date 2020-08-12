@@ -3,7 +3,7 @@ import {Code, Function, Runtime} from '@aws-cdk/aws-lambda';
 import {LambdaRestApi} from "@aws-cdk/aws-apigateway";
 import {AttributeType, Table} from "@aws-cdk/aws-dynamodb";
 
-export class InfraStack extends cdk.Stack {
+export class AppStack extends cdk.Stack {
   constructor(scope: cdk.Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 

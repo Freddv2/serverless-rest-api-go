@@ -12,7 +12,8 @@ import (
 
 var testRepo *buckets.DynamoDBRepository
 
-func initLocalDynamoDB() *dynamodb.DynamoDB {
+//A local docker instance of dynamodb must be running on port 8000
+func createTable() *dynamodb.DynamoDB {
 	cfg := &aws.Config{
 		Endpoint: aws.String("http://localhost:8000"),
 		Region:   aws.String("ca-central-1"),
@@ -51,7 +52,7 @@ func initLocalDynamoDB() *dynamodb.DynamoDB {
 	return db
 }
 
-func destroyTestDynamoDB(db *dynamodb.DynamoDB) {
+func deleteTable(db *dynamodb.DynamoDB) {
 	deleteTableReq := &dynamodb.DeleteTableInput{
 		TableName: aws.String(buckets.TableName),
 	}
@@ -59,7 +60,7 @@ func destroyTestDynamoDB(db *dynamodb.DynamoDB) {
 }
 
 func initTestRepository() {
-	db := initLocalDynamoDB()
+	db := createTable()
 	testRepo = buckets.NewDynamoDBRepository(db)
 }
 
@@ -74,7 +75,7 @@ func createTestBuckets() {
 
 func TestDynamoDBRepository_FindById(t *testing.T) {
 	initTestRepository()
-	defer destroyTestDynamoDB(testRepo.DynamoDB)
+	defer deleteTable(testRepo.DynamoDB)
 
 	createTestBuckets()
 
@@ -86,7 +87,7 @@ func TestDynamoDBRepository_FindById(t *testing.T) {
 
 func TestDynamoDBRepository_FindByName(t *testing.T) {
 	initTestRepository()
-	defer destroyTestDynamoDB(testRepo.DynamoDB)
+	defer deleteTable(testRepo.DynamoDB)
 
 	createTestBuckets()
 
@@ -98,7 +99,7 @@ func TestDynamoDBRepository_FindByName(t *testing.T) {
 
 func TestDynamoDBRepository_CreateOrUpdate(t *testing.T) {
 	initTestRepository()
-	defer destroyTestDynamoDB(testRepo.DynamoDB)
+	defer deleteTable(testRepo.DynamoDB)
 
 	createTestBuckets()
 
@@ -113,7 +114,7 @@ func TestDynamoDBRepository_CreateOrUpdate(t *testing.T) {
 
 func TestDynamoDBRepository_Delete(t *testing.T) {
 	initTestRepository()
-	defer destroyTestDynamoDB(testRepo.DynamoDB)
+	defer deleteTable(testRepo.DynamoDB)
 
 	createTestBuckets()
 
@@ -129,7 +130,7 @@ func TestDynamoDBRepository_Delete(t *testing.T) {
 
 func TestDynamoDBRepository_SearchByTenant(t *testing.T) {
 	initTestRepository()
-	defer destroyTestDynamoDB(testRepo.DynamoDB)
+	defer deleteTable(testRepo.DynamoDB)
 
 	createTestBuckets()
 
@@ -150,7 +151,7 @@ func TestDynamoDBRepository_SearchByTenant(t *testing.T) {
 
 func TestDynamoDBRepository_SearchWithLimit(t *testing.T) {
 	initTestRepository()
-	defer destroyTestDynamoDB(testRepo.DynamoDB)
+	defer deleteTable(testRepo.DynamoDB)
 
 	createTestBuckets()
 
@@ -171,7 +172,7 @@ func TestDynamoDBRepository_SearchWithLimit(t *testing.T) {
 
 func TestDynamoDBRepository_SearchByName(t *testing.T) {
 	initTestRepository()
-	defer destroyTestDynamoDB(testRepo.DynamoDB)
+	defer deleteTable(testRepo.DynamoDB)
 
 	createTestBuckets()
 
@@ -192,7 +193,7 @@ func TestDynamoDBRepository_SearchByName(t *testing.T) {
 
 func TestDynamoDBRepository_SearchByIds(t *testing.T) {
 	initTestRepository()
-	defer destroyTestDynamoDB(testRepo.DynamoDB)
+	defer deleteTable(testRepo.DynamoDB)
 
 	createTestBuckets()
 
