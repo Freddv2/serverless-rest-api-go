@@ -1,12 +1,12 @@
-package buckets
+package portfolio
 
 import (
 	"time"
 )
 
-type Bucket struct {
+type Portfolio struct {
 	TenantId         string    `json:"tenantId"`
-	BucketId         string    `json:"bucketId"`
+	Id               string    `json:"id"`
 	Name             string    `json:"name"`
 	Description      string    `json:"description"`
 	Assets           []Asset   `json:"assets"`
@@ -15,7 +15,8 @@ type Bucket struct {
 }
 
 type Asset struct {
-	Symbol string `json:"symbol"`
+	Symbol string  `json:"symbol"`
+	Weight float32 `json:"weight"`
 }
 
 type SearchContext struct {

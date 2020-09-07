@@ -1,4 +1,4 @@
-package buckets
+package portfolio
 
 import (
 	"encoding/json"
@@ -18,15 +18,15 @@ func NewHandler(service service) *Handler {
 
 func (h *Handler) FindById(ctx *gin.Context) {
 	tenantId := ctx.Param("tenantId")
-	bucketId := ctx.Param("bucketId")
-	bucket, err := h.service.FindById(ctx, tenantId, bucketId)
+	id := ctx.Param("id")
+	portfolio, err := h.service.FindById(ctx, tenantId, id)
 	if errors.Is(err, ErrNotFound) {
 		ctx.String(404, "Not Found")
 	} else if err != nil {
 		ctx.JSON(500, err)
 	}
 
-	ctx.JSON(200, bucket)
+	ctx.JSON(200, portfolio)
 }
 
 func (h *Handler) Search(ctx *gin.Context) {
@@ -45,25 +45,25 @@ func (h *Handler) Search(ctx *gin.Context) {
 		NbOfReturnedElements: nbOfReturnedElements,
 		Ids:                  ids,
 	}
-	buckets, err := h.service.Search(ctx, searchContext)
+	portfolios, err := h.service.Search(ctx, searchContext)
 	if err != nil {
 		ctx.JSON(500, err)
 	}
-	ctx.JSON(200, buckets)
+	ctx.JSON(200, portfolios)
 }
 
 func (h *Handler) Create(ctx *gin.Context) {
 	tenantId := ctx.Param("tenantId")
 
-	var bucket Bucket
-	err := json.NewDecoder(ctx.Request.Body).Decode(&bucket)
+	var portfolio Portfolio
+	err := json.NewDecoder(ctx.Request.Body).Decode(&portfolio)
 	if err != nil {
 		ctx.JSON(500, err)
 	}
 
-	id, err := h.service.Create(ctx, tenantId, bucket)
+	id, err := h.service.Create(ctx, tenantId, portfolio)
 	if errors.Is(err, ErrAlreadyExists) {
-		ctx.String(409, "Bucket already exists")
+		ctx.String(409, "Portfolio already exists")
 	} else if err != nil {
 		ctx.JSON(500, err)
 	} else {
@@ -74,13 +74,13 @@ func (h *Handler) Create(ctx *gin.Context) {
 func (h *Handler) Update(ctx *gin.Context) {
 	tenantId := ctx.Param("tenantId")
 
-	var bucket Bucket
-	err := json.NewDecoder(ctx.Request.Body).Decode(&bucket)
+	var portfolio Portfolio
+	err := json.NewDecoder(ctx.Request.Body).Decode(&portfolio)
 	if err != nil {
 		ctx.JSON(500, err)
 	}
 
-	err = h.service.Update(ctx, tenantId, bucket)
+	err = h.service.Update(ctx, tenantId, portfolio)
 	if errors.Is(err, ErrNotFound) {
 		ctx.String(404, "Not Found")
 	} else if err != nil {
@@ -92,9 +92,9 @@ func (h *Handler) Update(ctx *gin.Context) {
 
 func (h *Handler) Delete(ctx *gin.Context) {
 	tenantId := ctx.Param("tenantId")
-	bucketId := ctx.Param("bucketId")
+	id := ctx.Param("id")
 
-	err := h.service.Delete(ctx, tenantId, bucketId)
+	err := h.service.Delete(ctx, tenantId, id)
 	if err != nil {
 		ctx.JSON(500, err)
 	}

@@ -1,29 +1,29 @@
 package test
 
 import (
-	"buckets"
+	"portfolio"
 	"time"
 )
 
 var (
-	testTenant  = "dv2"
-	testBucket1 = buckets.Bucket{
+	testTenant     = "dv2"
+	testPortfolio1 = portfolio.Portfolio{
 		TenantId:         testTenant,
-		BucketId:         "1",
-		Name:             "An ETF Stocks bucket",
+		Id:               "1",
+		Name:             "An ETF Stocks portfolio",
 		Description:      "Desc1",
-		Assets:           []buckets.Asset{{"SPY"}, {"QQQ"}, {"VFV"}},
+		Assets:           []portfolio.Asset{{"SPY", 33}, {"QQQ", 33}, {"VFV", 34}},
 		CreationDate:     time.Now().Truncate(0), //Truncate(0) means removing the monotonic time which causes problems with assert
 		LastModifiedDate: time.Now().Truncate(0), //Truncate(0) means removing the monotonic time which causes problems with assert
 	}
-	testBucket2 = buckets.Bucket{
+	testPortfolio2 = portfolio.Portfolio{
 		TenantId:         testTenant,
-		BucketId:         "2",
-		Name:             "An ETF Bonds bucket",
+		Id:               "2",
+		Name:             "An ETF Bonds portfolio",
 		Description:      "Desc2",
-		Assets:           []buckets.Asset{{"IEF"}, {"SHY"}},
+		Assets:           []portfolio.Asset{{"IEF", 50}, {"SHY", 50}},
 		CreationDate:     time.Now().Truncate(0), //Truncate(0) means removing the monotonic time which causes problems with assert
 		LastModifiedDate: time.Now().Truncate(0), //Truncate(0) means removing the monotonic time which causes problems with assert
 	}
-	testBuckets = []buckets.Bucket{testBucket1, testBucket2}
+	testPortfolios = []portfolio.Portfolio{testPortfolio1, testPortfolio2}
 )

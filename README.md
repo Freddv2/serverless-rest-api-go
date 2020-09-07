@@ -2,7 +2,7 @@
 
 ## Summary
 
-This is an AWS serverless REST API written in Go that can manage "buckets". A bucket is simply a container of
+This is an AWS serverless REST API written in Go that can manage "Portfolio". A portfolio is simply a container of
 stocks and/or ETFs.
 
 The architecture tries to follow Uncle Bob's Clean Architecture.
@@ -21,8 +21,8 @@ Then compile & zip
 set GOOS=linux
 set GOARCH=amd64
 set CGO_ENABLED=0
-go build -o functions\buckets\build\main functions\buckets\cmd\main.go
-build-lambda-zip -o functions\buckets\build\main.zip functions\buckets\build\main
+go build -o functions\portfolios\build\main functions\portfolios\cmd\main.go
+build-lambda-zip -o functions\portfolios\build\main.zip functions\portfolios\build\main
 ```
 
 ## Deployment

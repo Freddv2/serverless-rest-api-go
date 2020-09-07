@@ -1,16 +1,16 @@
 package test
 
 import (
-	"buckets"
 	"context"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/stretchr/testify/require"
+	"portfolio"
 	"testing"
 )
 
-var testRepo *buckets.DynamoDBRepository
+var testRepo *portfolio.DynamoDBRepository
 
 //A local docker instance of dynamodb must be running on port 8000
 func createTable() *dynamodb.DynamoDB {
@@ -21,15 +21,15 @@ func createTable() *dynamodb.DynamoDB {
 	sess := session.Must(session.NewSession(cfg))
 	db := dynamodb.New(sess)
 
-	createTableDef := &dynamodb.CreateTableInput{
-		TableName: aws.String(buckets.TableName),
+	createTableReq := &dynamodb.CreateTableInput{
+		TableName: aws.String(portfolio.TableName),
 		AttributeDefinitions: []*dynamodb.AttributeDefinition{
 			{
 				AttributeName: aws.String("tenantId"),
 				AttributeType: aws.String("S"),
 			},
 			{
-				AttributeName: aws.String("bucketId"),
+				AttributeName: aws.String("id"),
 				AttributeType: aws.String("S"),
 			},
 		},
@@ -39,13 +39,13 @@ func createTable() *dynamodb.DynamoDB {
 				KeyType:       aws.String("HASH"),
 			},
 			{
-				AttributeName: aws.String("bucketId"),
+				AttributeName: aws.String("id"),
 				KeyType:       aws.String("RANGE"),
 			},
 		},
 		BillingMode: aws.String("PAY_PER_REQUEST"),
 	}
-	_, err := db.CreateTable(createTableDef)
+	_, err := db.CreateTable(createTableReq)
 	if err != nil {
 		panic(err)
 	}
@@ -54,21 +54,21 @@ func createTable() *dynamodb.DynamoDB {
 
 func deleteTable(db *dynamodb.DynamoDB) {
 	deleteTableReq := &dynamodb.DeleteTableInput{
-		TableName: aws.String(buckets.TableName),
+		TableName: aws.String(portfolio.TableName),
 	}
 	_, _ = db.DeleteTable(deleteTableReq)
 }
 
 func initTestRepository() {
 	db := createTable()
-	testRepo = buckets.NewDynamoDBRepository(db)
+	testRepo = portfolio.NewDynamoDBRepository(db)
 }
 
-func createTestBuckets() {
-	if err := testRepo.CreateOrUpdate(context.Background(), testBucket1); err != nil {
+func createTestPortfolios() {
+	if err := testRepo.CreateOrUpdate(context.Background(), testPortfolio1); err != nil {
 		panic(err)
 	}
-	if err := testRepo.CreateOrUpdate(context.Background(), testBucket2); err != nil {
+	if err := testRepo.CreateOrUpdate(context.Background(), testPortfolio2); err != nil {
 		panic(err)
 	}
 }
@@ -77,137 +77,137 @@ func TestDynamoDBRepository_FindById(t *testing.T) {
 	initTestRepository()
 	defer deleteTable(testRepo.DynamoDB)
 
-	createTestBuckets()
+	createTestPortfolios()
 
-	actualBucket, err := testRepo.FindById(context.Background(), testTenant, testBucket1.BucketId)
+	actualPortfolio, err := testRepo.FindById(context.Background(), testTenant, testPortfolio1.Id)
 
 	require.NoError(t, err)
-	require.Equal(t, testBucket1, *actualBucket)
+	require.Equal(t, testPortfolio1, *actualPortfolio)
 }
 
 func TestDynamoDBRepository_FindByName(t *testing.T) {
 	initTestRepository()
 	defer deleteTable(testRepo.DynamoDB)
 
-	createTestBuckets()
+	createTestPortfolios()
 
-	actualBucket, err := testRepo.FindByName(context.Background(), testTenant, testBucket1.Name)
+	actualPortfolio, err := testRepo.FindByName(context.Background(), testTenant, testPortfolio1.Name)
 
 	require.NoError(t, err)
-	require.Equal(t, testBucket1, *actualBucket)
+	require.Equal(t, testPortfolio1, *actualPortfolio)
 }
 
 func TestDynamoDBRepository_CreateOrUpdate(t *testing.T) {
 	initTestRepository()
 	defer deleteTable(testRepo.DynamoDB)
 
-	createTestBuckets()
+	createTestPortfolios()
 
-	actualBucket, err := testRepo.FindById(context.Background(), testTenant, testBucket1.BucketId)
+	actualPortfolio, err := testRepo.FindById(context.Background(), testTenant, testPortfolio1.Id)
 	require.NoError(t, err)
-	require.Equal(t, testBucket1, *actualBucket)
+	require.Equal(t, testPortfolio1, *actualPortfolio)
 
-	actualBucket, err = testRepo.FindById(context.Background(), testTenant, testBucket2.BucketId)
+	actualPortfolio, err = testRepo.FindById(context.Background(), testTenant, testPortfolio2.Id)
 	require.NoError(t, err)
-	require.Equal(t, testBucket2, *actualBucket)
+	require.Equal(t, testPortfolio2, *actualPortfolio)
 }
 
 func TestDynamoDBRepository_Delete(t *testing.T) {
 	initTestRepository()
 	defer deleteTable(testRepo.DynamoDB)
 
-	createTestBuckets()
+	createTestPortfolios()
 
-	err := testRepo.Delete(context.Background(), testTenant, testBucket1.BucketId)
-
-	require.NoError(t, err)
-
-	actualBucket, err := testRepo.FindById(context.Background(), testTenant, testBucket1.BucketId)
+	err := testRepo.Delete(context.Background(), testTenant, testPortfolio1.Id)
 
 	require.NoError(t, err)
-	require.Nil(t, actualBucket)
+
+	actualPortfolio, err := testRepo.FindById(context.Background(), testTenant, testPortfolio1.Id)
+
+	require.NoError(t, err)
+	require.Nil(t, actualPortfolio)
 }
 
 func TestDynamoDBRepository_SearchByTenant(t *testing.T) {
 	initTestRepository()
 	defer deleteTable(testRepo.DynamoDB)
 
-	createTestBuckets()
+	createTestPortfolios()
 
-	searchContext := buckets.SearchContext{
-		TenantId:             testBucket1.TenantId,
+	searchContext := portfolio.SearchContext{
+		TenantId:             testPortfolio1.TenantId,
 		Name:                 "",
 		NbOfReturnedElements: 0,
 		NextPageCursor:       "",
 		Ids:                  nil,
 	}
 
-	actualBuckets, err := testRepo.Search(context.Background(), searchContext)
+	actualPortfolios, err := testRepo.Search(context.Background(), searchContext)
 
 	require.NoError(t, err)
-	require.Len(t, actualBuckets, 2)
-	require.Equal(t, testBuckets, actualBuckets)
+	require.Len(t, actualPortfolios, 2)
+	require.Equal(t, testPortfolios, actualPortfolios)
 }
 
 func TestDynamoDBRepository_SearchWithLimit(t *testing.T) {
 	initTestRepository()
 	defer deleteTable(testRepo.DynamoDB)
 
-	createTestBuckets()
+	createTestPortfolios()
 
-	searchContext := buckets.SearchContext{
-		TenantId:             testBucket1.TenantId,
+	searchContext := portfolio.SearchContext{
+		TenantId:             testPortfolio1.TenantId,
 		Name:                 "",
 		NbOfReturnedElements: 1,
 		NextPageCursor:       "",
 		Ids:                  nil,
 	}
 
-	actualBuckets, err := testRepo.Search(context.Background(), searchContext)
+	actualPortfolios, err := testRepo.Search(context.Background(), searchContext)
 
 	require.NoError(t, err)
-	require.Len(t, actualBuckets, 1)
-	require.Equal(t, actualBuckets[0], testBucket1)
+	require.Len(t, actualPortfolios, 1)
+	require.Equal(t, actualPortfolios[0], testPortfolio1)
 }
 
 func TestDynamoDBRepository_SearchByName(t *testing.T) {
 	initTestRepository()
 	defer deleteTable(testRepo.DynamoDB)
 
-	createTestBuckets()
+	createTestPortfolios()
 
-	searchContext := buckets.SearchContext{
-		TenantId:             testBucket1.TenantId,
-		Name:                 testBucket1.Name,
+	searchContext := portfolio.SearchContext{
+		TenantId:             testPortfolio1.TenantId,
+		Name:                 testPortfolio1.Name,
 		NbOfReturnedElements: 0,
 		NextPageCursor:       "",
 		Ids:                  nil,
 	}
 
-	actualBuckets, err := testRepo.Search(context.Background(), searchContext)
+	actualPortfolios, err := testRepo.Search(context.Background(), searchContext)
 
 	require.NoError(t, err)
-	require.Len(t, actualBuckets, 1)
-	require.Equal(t, actualBuckets[0], testBucket1)
+	require.Len(t, actualPortfolios, 1)
+	require.Equal(t, actualPortfolios[0], testPortfolio1)
 }
 
 func TestDynamoDBRepository_SearchByIds(t *testing.T) {
 	initTestRepository()
 	defer deleteTable(testRepo.DynamoDB)
 
-	createTestBuckets()
+	createTestPortfolios()
 
-	searchContext := buckets.SearchContext{
-		TenantId:             testBucket1.TenantId,
+	searchContext := portfolio.SearchContext{
+		TenantId:             testPortfolio1.TenantId,
 		Name:                 "",
 		NbOfReturnedElements: 0,
 		NextPageCursor:       "",
-		Ids:                  []string{testBucket1.BucketId},
+		Ids:                  []string{testPortfolio1.Id},
 	}
 
-	actualBuckets, err := testRepo.Search(context.Background(), searchContext)
+	actualPortfolios, err := testRepo.Search(context.Background(), searchContext)
 
 	require.NoError(t, err)
-	require.Len(t, actualBuckets, 1)
-	require.Equal(t, actualBuckets[0], testBucket1)
+	require.Len(t, actualPortfolios, 1)
+	require.Equal(t, actualPortfolios[0], testPortfolio1)
 }

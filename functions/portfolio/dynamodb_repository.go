@@ -1,4 +1,4 @@
-package buckets
+package portfolio
 
 import (
 	"context"
@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	TableName = "BUCKET"
+	TableName = "PORTFOLIO"
 )
 
 type DynamoDBRepository struct {
@@ -21,15 +21,15 @@ func NewDynamoDBRepository(dynamoDBClient *dynamodb.DynamoDB) *DynamoDBRepositor
 	return &DynamoDBRepository{dynamoDBClient}
 }
 
-func (r *DynamoDBRepository) FindById(ctx context.Context, tenantId string, bucketId string) (*Bucket, error) {
+func (r *DynamoDBRepository) FindById(ctx context.Context, tenantId string, id string) (*Portfolio, error) {
 	input := &dynamodb.GetItemInput{
 		TableName: aws.String(TableName),
 		Key: map[string]*dynamodb.AttributeValue{
 			"tenantId": {
 				S: &tenantId,
 			},
-			"bucketId": {
-				S: &bucketId,
+			"id": {
+				S: &id,
 			},
 		},
 	}
@@ -42,17 +42,17 @@ func (r *DynamoDBRepository) FindById(ctx context.Context, tenantId string, buck
 		return nil, nil
 	}
 
-	bucket := &Bucket{}
-	err = dynamodbattribute.UnmarshalMap(result.Item, bucket)
+	portfolio := &Portfolio{}
+	err = dynamodbattribute.UnmarshalMap(result.Item, portfolio)
 	if err != nil {
 		return nil, err
 	}
 
-	return bucket, nil
+	return portfolio, nil
 }
 
-func (r *DynamoDBRepository) FindByName(ctx context.Context, tenantId string, bucketName string) (*Bucket, error) {
-	var bucket *Bucket
+func (r *DynamoDBRepository) FindByName(ctx context.Context, tenantId string, name string) (*Portfolio, error) {
+	var portfolio *Portfolio
 	input := &dynamodb.QueryInput{
 		TableName: aws.String(TableName),
 		KeyConditions: map[string]*dynamodb.Condition{
@@ -69,11 +69,11 @@ func (r *DynamoDBRepository) FindByName(ctx context.Context, tenantId string, bu
 			"#name": aws.String("name"),
 		},
 		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
-			":bucketName": {
-				S: aws.String(bucketName),
+			":name": {
+				S: aws.String(name),
 			},
 		},
-		FilterExpression: aws.String("#name = :bucketName"),
+		FilterExpression: aws.String("#name = :name"),
 		Limit:            aws.Int64(1),
 	}
 	result, err := r.DynamoDB.QueryWithContext(ctx, input)
@@ -82,18 +82,18 @@ func (r *DynamoDBRepository) FindByName(ctx context.Context, tenantId string, bu
 	}
 
 	if len(result.Items) > 0 {
-		bucket = &Bucket{}
-		err = dynamodbattribute.UnmarshalMap(result.Items[0], bucket)
+		portfolio = &Portfolio{}
+		err = dynamodbattribute.UnmarshalMap(result.Items[0], portfolio)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	return bucket, nil
+	return portfolio, nil
 }
 
-func (r *DynamoDBRepository) CreateOrUpdate(ctx context.Context, bucket Bucket) error {
-	item, err := dynamodbattribute.MarshalMap(bucket)
+func (r *DynamoDBRepository) CreateOrUpdate(ctx context.Context, portfolio Portfolio) error {
+	item, err := dynamodbattribute.MarshalMap(portfolio)
 	if err != nil {
 		return err
 	}
@@ -105,15 +105,15 @@ func (r *DynamoDBRepository) CreateOrUpdate(ctx context.Context, bucket Bucket) 
 	return err
 }
 
-func (r *DynamoDBRepository) Delete(ctx context.Context, tenantId string, bucketId string) error {
+func (r *DynamoDBRepository) Delete(ctx context.Context, tenantId string, id string) error {
 	input := &dynamodb.DeleteItemInput{
 		TableName: aws.String(TableName),
 		Key: map[string]*dynamodb.AttributeValue{
 			"tenantId": {
 				S: aws.String(tenantId),
 			},
-			"bucketId": {
-				S: aws.String(bucketId),
+			"id": {
+				S: aws.String(id),
 			},
 		},
 	}
@@ -121,9 +121,9 @@ func (r *DynamoDBRepository) Delete(ctx context.Context, tenantId string, bucket
 	return err
 }
 
-func (r *DynamoDBRepository) Search(ctx context.Context, searchCtx SearchContext) ([]Bucket, error) {
+func (r *DynamoDBRepository) Search(ctx context.Context, searchCtx SearchContext) ([]Portfolio, error) {
 
-	buckets := make([]Bucket, 0)
+	portfolios := make([]Portfolio, 0)
 	filterExp := ""
 	expNames := make(map[string]*string)
 	expValues := make(map[string]*dynamodb.AttributeValue)
@@ -140,11 +140,11 @@ func (r *DynamoDBRepository) Search(ctx context.Context, searchCtx SearchContext
 	if len(searchCtx.Ids) > 0 {
 		keys := make([]string, len(searchCtx.Ids))
 		for i, id := range searchCtx.Ids {
-			keys[i] = ":bucketId" + strconv.Itoa(i)
+			keys[i] = ":portfolioId" + strconv.Itoa(i)
 			expValues[keys[i]] = &dynamodb.AttributeValue{S: aws.String(id)}
 		}
-		filterExp += " and #bucketId in(" + strings.Join(keys, ",") + ")"
-		expNames["#bucketId"] = aws.String("bucketId")
+		filterExp += " and #portfolioId in(" + strings.Join(keys, ",") + ")"
+		expNames["#portfolioId"] = aws.String("portfolioId")
 	}
 	scan := &dynamodb.ScanInput{
 		TableName:                 aws.String(TableName),
@@ -163,9 +163,9 @@ func (r *DynamoDBRepository) Search(ctx context.Context, searchCtx SearchContext
 		return nil, err
 	}
 
-	if err := dynamodbattribute.UnmarshalListOfMaps(result.Items, &buckets); err != nil {
+	if err := dynamodbattribute.UnmarshalListOfMaps(result.Items, &portfolios); err != nil {
 		return nil, err
 	}
 
-	return buckets, nil
+	return portfolios, nil
 }

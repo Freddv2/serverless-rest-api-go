@@ -3,7 +3,6 @@
 package main
 
 import (
-	"buckets"
 	"context"
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
@@ -11,6 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/awslabs/aws-lambda-go-api-proxy/gin"
+	"portfolio"
 )
 
 var router *ginadapter.GinLambda
@@ -30,10 +30,10 @@ func init() {
 		panic(err)
 	}
 	ddb := dynamodb.New(sess)
-	r := buckets.NewDynamoDBRepository(ddb)
-	s := buckets.NewService(r)
-	h := buckets.NewHandler(s)
-	router = buckets.NewLambdaRouter(h)
+	r := portfolio.NewDynamoDBRepository(ddb)
+	s := portfolio.NewService(r)
+	h := portfolio.NewHandler(s)
+	router = portfolio.NewLambdaRouter(h)
 }
 
 func main() {

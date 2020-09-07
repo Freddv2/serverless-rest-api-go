@@ -1,7 +1,6 @@
 package test
 
 import (
-	"buckets"
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -11,20 +10,21 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"portfolio"
 	"testing"
 )
 
-func initTestHandler(t *testing.T) (h *buckets.Handler, s *MockService) {
+func initTestHandler(t *testing.T) (h *portfolio.Handler, s *MockService) {
 	ctrl := gomock.NewController(t)
 	s = NewMockService(ctrl)
-	h = buckets.NewHandler(s)
+	h = portfolio.NewHandler(s)
 
 	return h, s
 }
 
-func initTestHttpServer(h *buckets.Handler) *httptest.Server {
+func initTestHttpServer(h *portfolio.Handler) *httptest.Server {
 	//Start a test http server with the handler
-	return httptest.NewServer(buckets.NewRouter(h))
+	return httptest.NewServer(portfolio.NewRouter(h))
 }
 
 func TestHandler_FindById(t *testing.T) {
@@ -32,27 +32,27 @@ func TestHandler_FindById(t *testing.T) {
 	ts := initTestHttpServer(handler)
 
 	mockService.EXPECT().
-		FindById(gomock.Any(), testTenant, testBucket1.BucketId).
-		Return(&testBucket1, nil)
+		FindById(gomock.Any(), testTenant, testPortfolio1.Id).
+		Return(&testPortfolio1, nil)
 
-	resp, err := http.Get(fmt.Sprintf("%s/buckets/%s/%s", ts.URL, testTenant, testBucket1.BucketId))
+	resp, err := http.Get(fmt.Sprintf("%s/portfolios/%s/%s", ts.URL, testTenant, testPortfolio1.Id))
 
 	require.NotNil(t, resp)
 	require.NoError(t, err)
 	require.Equal(t, 200, resp.StatusCode)
 
-	var b buckets.Bucket
+	var b portfolio.Portfolio
 	_ = json.NewDecoder(resp.Body).Decode(&b)
-	assert.Equal(t, testBucket1, b)
+	assert.Equal(t, testPortfolio1, b)
 }
 
 func TestHandler_Search(t *testing.T) {
 	handler, mockService := initTestHandler(t)
 	ts := initTestHttpServer(handler)
 
-	expectedSC := buckets.SearchContext{
+	expectedSC := portfolio.SearchContext{
 		TenantId:             testTenant,
-		Name:                 testBucket1.Name,
+		Name:                 testPortfolio1.Name,
 		NextPageCursor:       "",
 		NbOfReturnedElements: 0,
 		Ids:                  []string{},
@@ -60,11 +60,11 @@ func TestHandler_Search(t *testing.T) {
 
 	mockService.EXPECT().
 		Search(gomock.Any(), expectedSC).
-		Return([]buckets.Bucket{testBucket1}, nil)
+		Return([]portfolio.Portfolio{testPortfolio1}, nil)
 
-	req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/buckets/%s", ts.URL, testTenant), nil)
+	req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/portfolios/%s", ts.URL, testTenant), nil)
 	q := req.URL.Query()
-	q.Add("name", testBucket1.Name)
+	q.Add("name", testPortfolio1.Name)
 	req.URL.RawQuery = q.Encode()
 
 	resp, err := http.DefaultClient.Do(req)
@@ -73,9 +73,9 @@ func TestHandler_Search(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 200, resp.StatusCode)
 
-	var actualBuckets []buckets.Bucket
+	var actualBuckets []portfolio.Portfolio
 	_ = json.NewDecoder(resp.Body).Decode(&actualBuckets)
-	assert.Contains(t, actualBuckets, testBucket1)
+	assert.Contains(t, actualBuckets, testPortfolio1)
 }
 
 func TestHandler_Create(t *testing.T) {
@@ -83,10 +83,10 @@ func TestHandler_Create(t *testing.T) {
 	ts := initTestHttpServer(handler)
 
 	mockService.EXPECT().
-		Create(gomock.Any(), testTenant, testBucket1).
-		Return(testBucket1.BucketId, nil)
-	bucketJson, _ := json.Marshal(testBucket1)
-	resp, err := http.Post(fmt.Sprintf("%s/buckets/%s", ts.URL, testTenant), "JSON", bytes.NewBuffer(bucketJson))
+		Create(gomock.Any(), testTenant, testPortfolio1).
+		Return(testPortfolio1.Id, nil)
+	bucketJson, _ := json.Marshal(testPortfolio1)
+	resp, err := http.Post(fmt.Sprintf("%s/portfolios/%s", ts.URL, testTenant), "JSON", bytes.NewBuffer(bucketJson))
 
 	require.NotNil(t, resp)
 	require.NoError(t, err)
@@ -94,7 +94,7 @@ func TestHandler_Create(t *testing.T) {
 
 	id, err := ioutil.ReadAll(resp.Body)
 	require.NoError(t, err)
-	assert.Equal(t, testBucket1.BucketId, string(id))
+	assert.Equal(t, testPortfolio1.Id, string(id))
 }
 
 func TestHandler_Update(t *testing.T) {
@@ -102,11 +102,11 @@ func TestHandler_Update(t *testing.T) {
 	ts := initTestHttpServer(handler)
 
 	mockService.EXPECT().
-		Update(gomock.Any(), testTenant, testBucket1).
+		Update(gomock.Any(), testTenant, testPortfolio1).
 		Return(nil)
 
-	bucketJson, _ := json.Marshal(testBucket1)
-	req, _ := http.NewRequest(http.MethodPut, fmt.Sprintf("%s/buckets/%s/%s", ts.URL, testTenant, testBucket1.BucketId), bytes.NewBuffer(bucketJson))
+	bucketJson, _ := json.Marshal(testPortfolio1)
+	req, _ := http.NewRequest(http.MethodPut, fmt.Sprintf("%s/portfolios/%s/%s", ts.URL, testTenant, testPortfolio1.Id), bytes.NewBuffer(bucketJson))
 	resp, err := http.DefaultClient.Do(req)
 
 	require.NotNil(t, resp)
@@ -119,10 +119,10 @@ func TestHandler_Delete(t *testing.T) {
 	ts := initTestHttpServer(handler)
 
 	mockService.EXPECT().
-		Delete(gomock.Any(), testTenant, testBucket1.BucketId).
+		Delete(gomock.Any(), testTenant, testPortfolio1.Id).
 		Return(nil)
 
-	req, _ := http.NewRequest(http.MethodDelete, fmt.Sprintf("%s/buckets/%s/%s", ts.URL, testTenant, testBucket1.BucketId), nil)
+	req, _ := http.NewRequest(http.MethodDelete, fmt.Sprintf("%s/portfolios/%s/%s", ts.URL, testTenant, testPortfolio1.Id), nil)
 	resp, err := http.DefaultClient.Do(req)
 
 	require.NotNil(t, resp)
